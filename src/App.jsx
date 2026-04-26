@@ -7,13 +7,15 @@ import ExportPanel from './components/ExportPanel'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
 
+// Fixed description used in pack.mcmeta and shown in-game
+export const FIXED_DESCRIPTION = 'guicraft.app | by aka_Colibry'
+
 function App() {
   const [activeTab, setActiveTab] = useState('editor')
 
   const [packSettings, setPackSettings] = useState({
     name: 'MyResourcePack',
-    // Fixed description – not editable by user
-    description: 'made by: aka_Colibry',
+    description: FIXED_DESCRIPTION,
     version: '1.21.5',
     author: 'aka_Colibry',
     iconDataUrl: null,
