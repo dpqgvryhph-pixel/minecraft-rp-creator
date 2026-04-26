@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Layers, Download, Settings, Image, Sliders, Package, ChevronRight, Github, Zap } from 'lucide-react'
+import { Image, Settings, Download } from 'lucide-react'
 import CanvasEditor from './components/CanvasEditor'
 import PackSettings from './components/PackSettings'
 import ExportPanel from './components/ExportPanel'
@@ -9,12 +9,15 @@ import Header from './components/Header'
 
 function App() {
   const [activeTab, setActiveTab] = useState('editor')
+
   const [packSettings, setPackSettings] = useState({
     name: 'MyResourcePack',
     description: 'Created with MC Resource Pack Creator',
-    version: '1.21',
+    version: '1.21 - 1.21.1',
     author: ''
   })
+
+  // Single source of truth — passed to both CanvasEditor and ExportPanel
   const [editorState, setEditorState] = useState({
     selectedMask: 'inventory',
     uploadedImage: null,
@@ -22,7 +25,7 @@ function App() {
     opacity: 1,
     brightness: 1,
     contrast: 1,
-    saturation: 1,
+    saturation: 1,        // used as CSS saturate() value
     showMaskOverlay: true
   })
 
@@ -36,11 +39,7 @@ function App() {
     <div className="min-h-screen bg-gray-950 text-gray-100">
       <Header />
       <div className="flex h-[calc(100vh-64px)]">
-        <Sidebar
-          tabs={tabs}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-        />
+        <Sidebar tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab} />
         <main className="flex-1 overflow-auto p-6">
           <AnimatePresence mode="wait">
             {activeTab === 'editor' && (
@@ -51,10 +50,7 @@ function App() {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2 }}
               >
-                <CanvasEditor
-                  editorState={editorState}
-                  setEditorState={setEditorState}
-                />
+                <CanvasEditor editorState={editorState} setEditorState={setEditorState} />
               </motion.div>
             )}
             {activeTab === 'settings' && (
@@ -65,10 +61,7 @@ function App() {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2 }}
               >
-                <PackSettings
-                  packSettings={packSettings}
-                  setPackSettings={setPackSettings}
-                />
+                <PackSettings packSettings={packSettings} setPackSettings={setPackSettings} />
               </motion.div>
             )}
             {activeTab === 'export' && (
@@ -79,10 +72,8 @@ function App() {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2 }}
               >
-                <ExportPanel
-                  packSettings={packSettings}
-                  editorState={editorState}
-                />
+                {/* Both packSettings AND editorState passed — export needs both */}
+                <ExportPanel packSettings={packSettings} editorState={editorState} />
               </motion.div>
             )}
           </AnimatePresence>
