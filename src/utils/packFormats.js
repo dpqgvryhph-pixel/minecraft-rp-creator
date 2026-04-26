@@ -24,13 +24,12 @@ export const PACK_FORMATS = [
   { label: '1.20.2',         format: 18, support: 'likely',      note: '' },
   { label: '1.20.3 – 1.20.4',format: 22, support: 'likely',      note: '' },
   { label: '1.20.5 – 1.20.6',format: 32, support: 'likely',      note: '' },
-  // ── GUARANTEED (last 5 major releases) ───────────────────────────────────
+  // ── GUARANTEED (1.21+) ───────────────────────────────────────────────────
   { label: '1.21 – 1.21.1',  format: 34, support: 'guaranteed',  note: '' },
   { label: '1.21.2 – 1.21.3',format: 42, support: 'guaranteed',  note: '' },
   { label: '1.21.4',         format: 46, support: 'guaranteed',  note: '' },
   { label: '1.21.5',         format: 55, support: 'guaranteed',  note: '' },
-  { label: '1.21.6',         format: 63, support: 'guaranteed',  note: '' },
-  { label: '1.21.7 – 1.21.8',format: 64, support: 'guaranteed',  note: 'Latest stable' },
+  { label: '1.21.6 – 1.21.8',format: 61, support: 'guaranteed',  note: 'Latest stable' },
 ]
 
 // Quick lookup by label string (backward compat with ExportPanel)
@@ -38,8 +37,11 @@ export const PACK_FORMATS_MAP = Object.fromEntries(
   PACK_FORMATS.map(v => [v.label, v.format])
 )
 
+// Default version label (must match a label above exactly)
+export const DEFAULT_VERSION = '1.21.5'
+
 // Default format (latest guaranteed)
-export const DEFAULT_PACK_FORMAT = 64
+export const DEFAULT_PACK_FORMAT = 55
 
 // Versions that use legacy (pre-1.13) GUI texture paths
 export const LEGACY_VERSIONS = new Set(['1.8.9', '1.9 – 1.10.2', '1.11 – 1.12.2'])

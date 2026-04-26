@@ -6,6 +6,25 @@ import PackSettings from './components/PackSettings'
 import ExportPanel from './components/ExportPanel'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
+import { DEFAULT_VERSION } from './utils/packFormats'
+import { GUI_MASKS } from './utils/guiMasks'
+
+// Default per-mask slot
+const DEFAULT_MASK_SLOT = () => ({
+  uploadedImage: null,
+  imageTransform: { x: 0, y: 0, width: 256, height: 256, rotation: 0 },
+  opacity: 1,
+  brightness: 1,
+  contrast: 1.05,
+  saturation: 1,
+})
+
+// Build initial masks object – one slot per mask id
+const buildInitialMasks = () => {
+  const masks = {}
+  Object.keys(GUI_MASKS).forEach(id => { masks[id] = DEFAULT_MASK_SLOT() })
+  return masks
+}
 
 function App() {
   const [activeTab, setActiveTab] = useState('editor')
@@ -13,20 +32,15 @@ function App() {
   const [packSettings, setPackSettings] = useState({
     name: 'MyResourcePack',
     description: 'made by: GUICraft',
-    version: '1.21.5',
+    version: DEFAULT_VERSION,
     author: '',
     iconDataUrl: null,
   })
 
   const [editorState, setEditorState] = useState({
     selectedMask: 'inventory',
-    uploadedImage: null,
-    imageTransform: { x: 0, y: 0, width: 256, height: 256, rotation: 0 },
-    opacity: 1,
-    brightness: 1,
-    contrast: 1,
-    saturation: 1,
     showMaskOverlay: true,
+    masks: buildInitialMasks(),
   })
 
   const tabs = [
@@ -46,7 +60,11 @@ function App() {
               <motion.div key="editor"
                 initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
-                <CanvasEditor editorState={editorState} setEditorState={setEditorState} />
+                <CanvasEditor
+                  editorState={editorState}
+                  setEditorState={setEditorState}
+                  defaultMaskSlot={DEFAULT_MASK_SLOT}
+                />
               </motion.div>
             )}
             {activeTab === 'settings' && (

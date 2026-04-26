@@ -37,31 +37,34 @@ export default function ExportPanel({ packSettings, editorState }) {
     ? LEGACY_VERSIONS.has(packSettings.version)
     : false
 
-  const getTexturePath = () => {
-    const maskId = editorState.selectedMask
+  // Count masks with uploaded images
+  const masksWithImages = Object.entries(editorState.masks ?? {}).filter(([, s]) => !!s.uploadedImage)
+
+  const getTexturePath = (maskId, legacy) => {
     const modern = `assets/minecraft/textures/${GUI_TEXTURE_PATHS[maskId] ?? 'gui/container/inventory.png'}`
-    return (isLegacy && LEGACY_PATHS[maskId]) ? LEGACY_PATHS[maskId] : modern
+    return (legacy && LEGACY_PATHS[maskId]) ? LEGACY_PATHS[maskId] : modern
   }
 
-  const getCanvasBlob = () => new Promise((resolve, reject) => {
+  const getMaskCanvasBlob = (maskId) => new Promise((resolve, reject) => {
     try {
       const canvas = document.createElement('canvas')
       canvas.width  = 256
       canvas.height = 256
       const ctx = canvas.getContext('2d')
       ctx.clearRect(0, 0, 256, 256)
-      if (editorState.uploadedImage) {
-        const { x, y, width, height, rotation } = editorState.imageTransform
+      const slot = editorState.masks?.[maskId]
+      if (slot?.uploadedImage) {
+        const { x, y, width, height, rotation } = slot.imageTransform
         ctx.save()
-        ctx.globalAlpha = editorState.opacity ?? 1
+        ctx.globalAlpha = slot.opacity ?? 1
         ctx.filter = [
-          `brightness(${editorState.brightness ?? 1})`,
-          `contrast(${editorState.contrast ?? 1})`,
-          `saturate(${editorState.saturation ?? 1})`,
+          `brightness(${slot.brightness ?? 1})`,
+          `contrast(${slot.contrast ?? 1.05})`,
+          `saturate(${slot.saturation ?? 1})`,
         ].join(' ')
         ctx.translate(x + width / 2, y + height / 2)
         ctx.rotate(((rotation ?? 0) * Math.PI) / 180)
-        ctx.drawImage(editorState.uploadedImage, -width / 2, -height / 2, width, height)
+        ctx.drawImage(slot.uploadedImage, -width / 2, -height / 2, width, height)
         ctx.restore()
       }
       canvas.toBlob(
@@ -112,9 +115,19 @@ export default function ExportPanel({ packSettings, editorState }) {
         : await buildDefaultIcon()
       zip.file('pack.png', iconBlob)
 
-      const texturePath = getTexturePath()
-      const textureBlob = await getCanvasBlob()
-      zip.file(texturePath, textureBlob)
+      // Export ALL masks that have an uploaded image
+      for (const [maskId] of masksWithImages) {
+        const texturePath = getTexturePath(maskId, isLegacy)
+        const textureBlob = await getMaskCanvasBlob(maskId)
+        zip.file(texturePath, textureBlob)
+      }
+
+      // If no mask has an image, export the selected mask as empty canvas
+      if (masksWithImages.length === 0) {
+        const texturePath = getTexturePath(editorState.selectedMask, isLegacy)
+        const textureBlob = await getMaskCanvasBlob(editorState.selectedMask)
+        zip.file(texturePath, textureBlob)
+      }
 
       const content = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } })
       const url = URL.createObjectURL(content)
@@ -131,7 +144,6 @@ export default function ExportPanel({ packSettings, editorState }) {
     } finally { setExporting(false) }
   }
 
-  const texturePath = getTexturePath()
   const maskMeta    = GUI_META?.[editorState.selectedMask]
   const maskLabel   = maskMeta?.label ?? editorState.selectedMask ?? '?'
 
@@ -148,15 +160,21 @@ export default function ExportPanel({ packSettings, editorState }) {
     ['Verzió',         String(packSettings.version || '—')],
     ['pack_format',    String(packFormat)],
     ['Kompatibilitás', '__support__'],
-    ['GUI',            maskLabel],
+    ['Textúrák',       masksWithImages.length > 0 ? `${masksWithImages.length} mask szerkesztve` : 'Nincs feltöltve'],
     ['Icon',           packSettings.iconDataUrl ? 'Egyedi' : 'Alap'],
-    ['Texture',        editorState.uploadedImage ? 'Feltöltve' : 'Üres canvas'],
   ]
 
-  const fileStructure = [
+  // File structure: one row per modified mask + meta files
+  const fileStructureRows = [
     { path: 'pack.mcmeta', desc: `pack_format: ${packFormat} · "${FIXED_DESCRIPTION}"` },
     { path: 'pack.png',    desc: packSettings.iconDataUrl ? 'Egyedi icon (64×64)' : 'Alap icon' },
-    { path: texturePath,   desc: `${maskLabel} – 256×256 PNG` },
+    ...(masksWithImages.length > 0
+      ? masksWithImages.map(([id]) => ({
+          path: getTexturePath(id, isLegacy),
+          desc: `${GUI_META[id]?.label ?? id} – 256×256 PNG`,
+        }))
+      : [{ path: getTexturePath(editorState.selectedMask, isLegacy), desc: `${maskLabel} – üres canvas (256×256 PNG)` }]
+    ),
   ]
 
   return (
@@ -202,7 +220,7 @@ export default function ExportPanel({ packSettings, editorState }) {
           <h3 className="text-sm font-bold text-yellow-300 uppercase tracking-wider">ZIP tartalom</h3>
         </div>
         <div className="space-y-2.5">
-          {fileStructure.map(({ path, desc }) => (
+          {fileStructureRows.map(({ path, desc }) => (
             <div key={path} className="flex items-start gap-3">
               <FileText size={14} className="text-gray-500 mt-0.5 shrink-0" />
               <div>
@@ -214,12 +232,12 @@ export default function ExportPanel({ packSettings, editorState }) {
         </div>
       </div>
 
-      {!editorState.uploadedImage && (
+      {masksWithImages.length === 0 && (
         <div className="flex items-start gap-3 bg-yellow-950/40 border border-yellow-700/50 rounded-xl p-4">
           <AlertCircle size={16} className="text-yellow-400 shrink-0 mt-0.5" />
           <p className="text-sm text-yellow-300">
-            Nincs feltöltött kép. Az exportált texture üres (átlátszó) PNG lesz.
-            Menj a <strong>GUI Editor</strong> fülre és töltsd fel a képet.
+            Nincs feltöltött kép egyetlen mask-hoz sem. Az exportált texture üres (átlátszó) PNG lesz.
+            Menj a <strong>GUI Editor</strong> fülre és töltsd fel a képeket.
           </p>
         </div>
       )}
@@ -231,7 +249,6 @@ export default function ExportPanel({ packSettings, editorState }) {
         </div>
       )}
 
-      {/* Export gomb */}
       <button
         onClick={handleExport}
         disabled={exporting}
@@ -246,7 +263,6 @@ export default function ExportPanel({ packSettings, editorState }) {
                      <><Download size={20} /> Resource Pack letöltése (.zip)</>}
       </button>
 
-      {/* Save to Cloud gomb – prémium */}
       <div className="relative">
         <div className="absolute -top-2 left-4 z-10">
           <span className="bg-gradient-to-r from-yellow-500 to-orange-500 text-black text-xs font-black px-2 py-0.5 rounded-full uppercase tracking-wide">⭐ Prémium</span>

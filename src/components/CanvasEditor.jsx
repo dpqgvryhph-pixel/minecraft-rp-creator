@@ -1,14 +1,28 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
-import { Upload, Eye, EyeOff, RotateCcw } from 'lucide-react'
+import { Upload, Eye, EyeOff, RotateCcw, RefreshCw } from 'lucide-react'
 import { GUI_MASKS, GUI_CATEGORIES, GUI_META } from '../utils/guiMasks'
 
-export default function CanvasEditor({ editorState, setEditorState }) {
+export default function CanvasEditor({ editorState, setEditorState, defaultMaskSlot }) {
   const canvasRef = useRef(null)
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0, imgX: 0, imgY: 0 })
   const [openCategory, setOpenCategory] = useState('storage')
 
-  const updateState = (updates) => setEditorState(prev => ({ ...prev, ...updates }))
+  const maskId = editorState.selectedMask
+  const slot = editorState.masks?.[maskId] ?? defaultMaskSlot()
+
+  // Update the current mask's slot
+  const updateSlot = (updates) =>
+    setEditorState(prev => ({
+      ...prev,
+      masks: {
+        ...prev.masks,
+        [prev.selectedMask]: { ...(prev.masks?.[prev.selectedMask] ?? defaultMaskSlot()), ...updates },
+      },
+    }))
+
+  // Update top-level editorState (selectedMask, showMaskOverlay)
+  const updateTop = (updates) => setEditorState(prev => ({ ...prev, ...updates }))
 
   const drawCanvas = useCallback(() => {
     const canvas = canvasRef.current
@@ -25,19 +39,19 @@ export default function CanvasEditor({ editorState, setEditorState }) {
       }
     }
 
-    if (editorState.uploadedImage) {
+    if (slot.uploadedImage) {
       ctx.save()
-      const { x, y, width, height, rotation } = editorState.imageTransform
-      ctx.globalAlpha = editorState.opacity
-      ctx.filter = `brightness(${editorState.brightness}) contrast(${editorState.contrast}) saturate(${editorState.saturation})`
+      const { x, y, width, height, rotation } = slot.imageTransform
+      ctx.globalAlpha = slot.opacity
+      ctx.filter = `brightness(${slot.brightness}) contrast(${slot.contrast}) saturate(${slot.saturation})`
       ctx.translate(x + width / 2, y + height / 2)
       ctx.rotate((rotation * Math.PI) / 180)
-      ctx.drawImage(editorState.uploadedImage, -width / 2, -height / 2, width, height)
+      ctx.drawImage(slot.uploadedImage, -width / 2, -height / 2, width, height)
       ctx.restore()
     }
 
     if (editorState.showMaskOverlay) {
-      const maskData = GUI_MASKS[editorState.selectedMask]
+      const maskData = GUI_MASKS[maskId]
       if (maskData) {
         ctx.save()
         ctx.filter = 'none'
@@ -60,7 +74,7 @@ export default function CanvasEditor({ editorState, setEditorState }) {
         ctx.restore()
       }
     }
-  }, [editorState])
+  }, [slot, editorState.showMaskOverlay, maskId])
 
   useEffect(() => { drawCanvas() }, [drawCanvas])
 
@@ -69,7 +83,7 @@ export default function CanvasEditor({ editorState, setEditorState }) {
     const reader = new FileReader()
     reader.onload = (e) => {
       const img = new Image()
-      img.onload = () => updateState({ uploadedImage: img })
+      img.onload = () => updateSlot({ uploadedImage: img })
       img.src = e.target.result
     }
     reader.readAsDataURL(file)
@@ -95,29 +109,45 @@ export default function CanvasEditor({ editorState, setEditorState }) {
     setDragStart({
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
-      imgX: editorState.imageTransform.x,
-      imgY: editorState.imageTransform.y
+      imgX: slot.imageTransform.x,
+      imgY: slot.imageTransform.y,
     })
   }
 
   const handleCanvasMouseMove = (e) => {
-    if (e.buttons !== 1 || !editorState.uploadedImage) return
+    if (e.buttons !== 1 || !slot.uploadedImage) return
     const canvas = canvasRef.current
     if (!canvas) return
     const rect = canvas.getBoundingClientRect()
     const scale = getCanvasScale()
     const dx = (e.clientX - rect.left - dragStart.x) * scale.x
     const dy = (e.clientY - rect.top - dragStart.y) * scale.y
-    updateState({
+    updateSlot({
       imageTransform: {
-        ...editorState.imageTransform,
+        ...slot.imageTransform,
         x: Math.round(dragStart.imgX + dx),
-        y: Math.round(dragStart.imgY + dy)
-      }
+        y: Math.round(dragStart.imgY + dy),
+      },
     })
   }
 
-  const currentMeta = GUI_META[editorState.selectedMask]
+  // Reset only transform (keep image)
+  const resetTransform = () =>
+    updateSlot({ imageTransform: defaultMaskSlot().imageTransform })
+
+  // Reset only visual FX (keep image + transform)
+  const resetVisualFX = () =>
+    updateSlot({
+      opacity:    defaultMaskSlot().opacity,
+      brightness: defaultMaskSlot().brightness,
+      contrast:   defaultMaskSlot().contrast,
+      saturation: defaultMaskSlot().saturation,
+    })
+
+  // Full reset for this mask slot (clear image too)
+  const resetMask = () => updateSlot(defaultMaskSlot())
+
+  const currentMeta = GUI_META[maskId]
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6">
@@ -134,7 +164,7 @@ export default function CanvasEditor({ editorState, setEditorState }) {
           </div>
           <div className="flex gap-2">
             <button
-              onClick={() => updateState({ showMaskOverlay: !editorState.showMaskOverlay })}
+              onClick={() => updateTop({ showMaskOverlay: !editorState.showMaskOverlay })}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all border ${
                 editorState.showMaskOverlay
                   ? 'bg-purple-700 hover:bg-purple-600 text-white border-purple-500'
@@ -144,15 +174,12 @@ export default function CanvasEditor({ editorState, setEditorState }) {
               {editorState.showMaskOverlay ? <Eye size={14}/> : <EyeOff size={14}/>}
               Mask Overlay
             </button>
-            {editorState.uploadedImage && (
+            {slot.uploadedImage && (
               <button
-                onClick={() => updateState({
-                  uploadedImage: null,
-                  imageTransform: { x: 0, y: 0, width: 256, height: 256, rotation: 0 }
-                })}
+                onClick={resetMask}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-red-700 hover:bg-red-600 text-white border border-red-500 transition-all"
               >
-                <RotateCcw size={14}/> Reset
+                <RotateCcw size={14}/> Reset mask
               </button>
             )}
           </div>
@@ -160,7 +187,6 @@ export default function CanvasEditor({ editorState, setEditorState }) {
 
         {/* Category tabs + mask selector */}
         <div className="space-y-2">
-          {/* Category tabs */}
           <div className="flex gap-1 flex-wrap">
             {GUI_CATEGORIES.map(cat => (
               <button
@@ -177,23 +203,28 @@ export default function CanvasEditor({ editorState, setEditorState }) {
             ))}
           </div>
 
-          {/* Masks in selected category */}
           <div className="flex gap-1.5 flex-wrap">
             {Object.entries(GUI_META)
               .filter(([, meta]) => meta.category === openCategory)
-              .map(([id, meta]) => (
-                <button
-                  key={id}
-                  onClick={() => updateState({ selectedMask: id })}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
-                    editorState.selectedMask === id
-                      ? 'bg-cyan-700 text-cyan-100 border border-cyan-500'
-                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700'
-                  }`}
-                >
-                  {meta.label.replace(/ \(.*\)/, '')}
-                </button>
-              ))}
+              .map(([id, meta]) => {
+                const hasImage = !!editorState.masks?.[id]?.uploadedImage
+                return (
+                  <button
+                    key={id}
+                    onClick={() => updateTop({ selectedMask: id })}
+                    className={`relative px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                      maskId === id
+                        ? 'bg-cyan-700 text-cyan-100 border border-cyan-500'
+                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700'
+                    }`}
+                  >
+                    {meta.label.replace(/ \(.*\)/, '')}
+                    {hasImage && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-green-400 border border-gray-950" />
+                    )}
+                  </button>
+                )
+              })}
           </div>
         </div>
 
@@ -216,7 +247,7 @@ export default function CanvasEditor({ editorState, setEditorState }) {
             onMouseDown={handleCanvasMouseDown}
             onMouseMove={handleCanvasMouseMove}
           />
-          {!editorState.uploadedImage && (
+          {!slot.uploadedImage && (
             <label className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer hover:bg-purple-950/20 transition-colors">
               <Upload size={32} className="text-gray-500 mb-3" />
               <p className="text-gray-400 font-medium">Drop image or click to upload</p>
@@ -232,30 +263,41 @@ export default function CanvasEditor({ editorState, setEditorState }) {
         </div>
 
         <p className="text-xs text-gray-600">
-          Tip: Drag the image on the canvas to reposition it. Use the sliders for fine-tuning.
+          Tip: Drag the image on the canvas to reposition it. A zöld pont jelzi, hogy az adott mask-hoz kép van feltöltve.
         </p>
       </div>
 
       {/* Controls Panel */}
       <div className="space-y-4">
+        {/* Transform */}
         <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 space-y-4">
-          <h3 className="text-sm font-bold text-purple-300 uppercase tracking-wider">Transform</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-purple-300 uppercase tracking-wider">Transform</h3>
+            <button
+              onClick={resetTransform}
+              title="Visszaállítás alapértékre"
+              className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium
+                         bg-gray-800 hover:bg-gray-700 text-gray-400 border border-gray-700 transition-all"
+            >
+              <RefreshCw size={11} /> Reset
+            </button>
+          </div>
           {[
-            ['X Position', 'x', -256, 256, 1, 'px'],
-            ['Y Position', 'y', -256, 256, 1, 'px'],
-            ['Width', 'width', 32, 512, 1, 'px'],
-            ['Height', 'height', 32, 512, 1, 'px'],
-            ['Rotation', 'rotation', -180, 180, 1, '°'],
+            ['X Position', 'x',        -256, 256, 1,    'px'],
+            ['Y Position', 'y',        -256, 256, 1,    'px'],
+            ['Width',      'width',      32, 512, 1,    'px'],
+            ['Height',     'height',     32, 512, 1,    'px'],
+            ['Rotation',   'rotation', -180, 180, 1,    '°'],
           ].map(([label, key, min, max, step, unit]) => (
             <div key={key}>
               <label className="text-xs text-gray-400 uppercase tracking-wider mb-1 block">
-                {label}: <span className="text-gray-200">{editorState.imageTransform[key]}{unit}</span>
+                {label}: <span className="text-gray-200">{slot.imageTransform[key]}{unit}</span>
               </label>
               <input
                 type="range" min={min} max={max} step={step}
-                value={editorState.imageTransform[key]}
-                onChange={(e) => updateState({
-                  imageTransform: { ...editorState.imageTransform, [key]: Number(e.target.value) }
+                value={slot.imageTransform[key]}
+                onChange={(e) => updateSlot({
+                  imageTransform: { ...slot.imageTransform, [key]: Number(e.target.value) },
                 })}
                 className="w-full h-2 rounded-full appearance-none cursor-pointer"
                 style={{ background: 'linear-gradient(to right, #7c3aed, #06b6d4)' }}
@@ -264,22 +306,33 @@ export default function CanvasEditor({ editorState, setEditorState }) {
           ))}
         </div>
 
+        {/* Visual FX */}
         <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 space-y-4">
-          <h3 className="text-sm font-bold text-cyan-300 uppercase tracking-wider">Visual FX</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-cyan-300 uppercase tracking-wider">Visual FX</h3>
+            <button
+              onClick={resetVisualFX}
+              title="Visszaállítás alapértékre"
+              className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium
+                         bg-gray-800 hover:bg-gray-700 text-gray-400 border border-gray-700 transition-all"
+            >
+              <RefreshCw size={11} /> Reset
+            </button>
+          </div>
           {[
-            ['Opacity', 'opacity', 0, 1, 0.01],
+            ['Opacity',    'opacity',    0,   1, 0.01],
             ['Brightness', 'brightness', 0.1, 3, 0.05],
-            ['Contrast', 'contrast', 0.1, 3, 0.05],
-            ['Saturation', 'saturation', 0, 3, 0.05],
+            ['Contrast',   'contrast',   0.1, 3, 0.05],
+            ['Saturation', 'saturation', 0,   3, 0.05],
           ].map(([label, key, min, max, step]) => (
             <div key={key}>
               <label className="text-xs text-gray-400 uppercase tracking-wider mb-1 block">
-                {label}: <span className="text-gray-200">{editorState[key].toFixed(2)}</span>
+                {label}: <span className="text-gray-200">{slot[key].toFixed(2)}</span>
               </label>
               <input
                 type="range" min={min} max={max} step={step}
-                value={editorState[key]}
-                onChange={(e) => updateState({ [key]: Number(e.target.value) })}
+                value={slot[key]}
+                onChange={(e) => updateSlot({ [key]: Number(e.target.value) })}
                 className="w-full h-2 rounded-full appearance-none cursor-pointer"
                 style={{ background: 'linear-gradient(to right, #7c3aed, #06b6d4)' }}
               />
