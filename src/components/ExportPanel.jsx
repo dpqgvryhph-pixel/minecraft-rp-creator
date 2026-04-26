@@ -171,8 +171,17 @@ export default function ExportPanel({ packSettings, editorState, itemsState = {}
         ctx.filter = `brightness(${itemData.brightness ?? 1}) contrast(${itemData.contrast ?? 1.05}) saturate(${itemData.saturation ?? 1})`
         ctx.drawImage(itemData.uploadedImage, 0, 0)
         const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
-        // Create full path inside assets/minecraft/textures/
-        const fullPath = `assets/minecraft/textures/${itemId.endsWith('.png') ? itemId : itemId + '.png'}`
+
+        // Handle path translation for Legacy versions (1.8.9 - 1.12.2)
+        // 1.13+ use singular: item/, block/
+        // Pre-1.13 use plural: items/, blocks/
+        let finalId = itemId
+        if (isLegacy) {
+          if (finalId.startsWith('item/'))  finalId = finalId.replace('item/', 'items/')
+          if (finalId.startsWith('block/')) finalId = finalId.replace('block/', 'blocks/')
+        }
+
+        const fullPath = `assets/minecraft/textures/${finalId.endsWith('.png') ? finalId : finalId + '.png'}`
         zip.file(fullPath, blob)
       }
 
