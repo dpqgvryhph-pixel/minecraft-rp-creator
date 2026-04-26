@@ -42,6 +42,8 @@ function App() {
     masks:           buildInitialMasks(),
   })
 
+  const [itemsState, setItemsState] = useState({})
+
   const tabs = [
     { id: 'editor',  label: 'GUI Editor',    icon: Image    },
     { id: 'items',   label: 'Item Editor',   icon: Package  },
@@ -81,8 +83,11 @@ function App() {
               </motion.div>
             )}
             {activeTab === 'items' && (
-              <motion.div key="items" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <ItemEditor />
+              <motion.div key="items" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
+                <ItemEditor
+                  itemsState={itemsState}
+                  setItemsState={setItemsState}
+                />
               </motion.div>
             )}
             {activeTab === 'settings' && (
@@ -98,6 +103,7 @@ function App() {
                 <ExportPanel
                   editorState={editorState}
                   packSettings={packSettings}
+                  itemsState={itemsState}
                 />
               </motion.div>
             )}

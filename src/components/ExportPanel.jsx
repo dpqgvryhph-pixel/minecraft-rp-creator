@@ -47,7 +47,7 @@ const LEGACY_PATHS = {
 
 const PACK_FORMATS_MAP = Object.fromEntries(PACK_FORMATS.map(v => [v.label, v]))
 
-export default function ExportPanel({ packSettings, editorState }) {
+export default function ExportPanel({ packSettings, editorState, itemsState = {} }) {
   const [exporting, setExporting] = useState(false)
   const [done, setDone]           = useState(false)
   const [error, setError]         = useState(null)
@@ -160,6 +160,22 @@ export default function ExportPanel({ packSettings, editorState }) {
         zip.file(texturePath, textureBlob)
       }
 
+      // ── Export Items & Environment from itemsState ──
+      for (const [itemId, itemData] of Object.entries(itemsState)) {
+        if (!itemData.uploadedImage) continue
+        const canvas = document.createElement('canvas')
+        canvas.width = itemData.uploadedImage.naturalWidth
+        canvas.height = itemData.uploadedImage.naturalHeight
+        const ctx = canvas.getContext('2d')
+        ctx.globalAlpha = itemData.opacity ?? 1
+        ctx.filter = `brightness(${itemData.brightness ?? 1}) contrast(${itemData.contrast ?? 1.05}) saturate(${itemData.saturation ?? 1})`
+        ctx.drawImage(itemData.uploadedImage, 0, 0)
+        const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
+        // Create full path inside assets/minecraft/textures/
+        const fullPath = `assets/minecraft/textures/${itemId.endsWith('.png') ? itemId : itemId + '.png'}`
+        zip.file(fullPath, blob)
+      }
+
       const content = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } })
       const url = URL.createObjectURL(content)
       const a   = document.createElement('a')
@@ -214,6 +230,10 @@ export default function ExportPanel({ packSettings, editorState }) {
         }))
       : [{ path: getTexturePath(editorState.selectedMask, isLegacy), desc: `${maskLabel} – üres canvas` }]
     ),
+    ...Object.entries(itemsState).filter(([,d]) => d.uploadedImage).map(([id]) => ({
+      path: `assets/minecraft/textures/${id.endsWith('.png') ? id : id + '.png'}`,
+      desc: `Custom Texture`
+    })),
   ]
 
   return (

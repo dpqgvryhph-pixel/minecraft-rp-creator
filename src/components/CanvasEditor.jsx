@@ -217,6 +217,9 @@ export default function CanvasEditor({ editorState, setEditorState, defaultMaskS
   // while preserving aspect ratio. Unlike a plain canvas-center, this aligns
   // the image to the actual GUI bounds (guiX/Y + guiW/H from GUI_META).
   const calcMaskFitTransform = useCallback((img) => {
+    if (img.naturalWidth === 256 && img.naturalHeight === 256) {
+      return { x: 0, y: 0, width: 256, height: 256, rotation: 0 }
+    }
     const bounds = getMaskBounds(maskId)       // { x, y, w, h } of the GUI panel
     const aspect = img.naturalWidth / img.naturalHeight
     let w = bounds.w
@@ -303,6 +306,11 @@ export default function CanvasEditor({ editorState, setEditorState, defaultMaskS
   const fitToMask = () => {
     if (!slot.uploadedImage) return
     updateSlot({ imageTransform: calcMaskFitTransform(slot.uploadedImage) })
+  }
+
+  const fillCanvas = () => {
+    if (!slot.uploadedImage) return
+    updateSlot({ imageTransform: { x: 0, y: 0, width: 256, height: 256, rotation: 0 } })
   }
 
   const resetTransform = () => updateSlot({ imageTransform: defaultMaskSlot().imageTransform })
@@ -467,6 +475,12 @@ export default function CanvasEditor({ editorState, setEditorState, defaultMaskS
                     className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium
                                bg-cyan-900 hover:bg-cyan-800 text-cyan-300 border border-cyan-700 transition-all">
                     <Crosshair size={11}/> Center
+                  </button>
+                  <button onClick={fillCanvas}
+                    title="Kép kihúzása a teljes 256x256-os vászonra"
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium
+                               bg-green-900 hover:bg-green-800 text-green-300 border border-green-700 transition-all">
+                    <Crosshair size={11}/> Fill
                   </button>
                 </>
               )}
