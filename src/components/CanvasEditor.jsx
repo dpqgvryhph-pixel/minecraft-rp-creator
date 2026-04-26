@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
-import { Upload, Eye, EyeOff, RotateCcw, RefreshCw } from 'lucide-react'
+import { Upload, Eye, EyeOff, RotateCcw, RefreshCw, Crosshair } from 'lucide-react'
 import { GUI_MASKS, GUI_CATEGORIES, GUI_META } from '../utils/guiMasks'
 
 export default function CanvasEditor({ editorState, setEditorState, defaultMaskSlot }) {
@@ -9,10 +9,8 @@ export default function CanvasEditor({ editorState, setEditorState, defaultMaskS
   const [openCategory, setOpenCategory] = useState('storage')
 
   const maskId = editorState.selectedMask
-  // Mindig az aktuális mask slotját olvassuk
   const slot = editorState.masks?.[maskId] ?? defaultMaskSlot()
 
-  // Csak az aktuális mask slotját frissíti
   const updateSlot = useCallback((updates) =>
     setEditorState(prev => ({
       ...prev,
@@ -26,19 +24,16 @@ export default function CanvasEditor({ editorState, setEditorState, defaultMaskS
     })),
   [setEditorState, defaultMaskSlot])
 
-  // Top-level mezők (selectedMask, showMaskOverlay)
   const updateTop = useCallback((updates) =>
     setEditorState(prev => ({ ...prev, ...updates })),
   [setEditorState])
 
-  // Canvas rajzolás
   const drawCanvas = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     ctx.clearRect(0, 0, 256, 256)
 
-    // Sakktábla háttér
     const size = 16
     for (let y = 0; y < 256; y += size) {
       for (let x = 0; x < 256; x += size) {
@@ -86,12 +81,38 @@ export default function CanvasEditor({ editorState, setEditorState, defaultMaskS
 
   useEffect(() => { drawCanvas() }, [drawCanvas])
 
+  // Kiszámolja a középre pozicionált transform-ot az aktuális méret alapján
+  const calcCenteredTransform = (currentTransform) => {
+    const w = currentTransform?.width ?? 256
+    const h = currentTransform?.height ?? 256
+    return {
+      ...currentTransform,
+      x: Math.round((256 - w) / 2),
+      y: Math.round((256 - h) / 2),
+    }
+  }
+
   const handleFileUpload = (file) => {
     if (!file || !file.type.startsWith('image/')) return
     const reader = new FileReader()
     reader.onload = (e) => {
       const img = new Image()
-      img.onload = () => updateSlot({ uploadedImage: img })
+      img.onload = () => {
+        // Aspect-ratio megőrzése, 256x256-ba fit, majd auto-center
+        const aspect = img.naturalWidth / img.naturalHeight
+        let w = 256
+        let h = 256
+        if (aspect > 1) { h = Math.round(256 / aspect) }
+        else if (aspect < 1) { w = Math.round(256 * aspect) }
+        const centeredTransform = {
+          x: Math.round((256 - w) / 2),
+          y: Math.round((256 - h) / 2),
+          width: w,
+          height: h,
+          rotation: 0,
+        }
+        updateSlot({ uploadedImage: img, imageTransform: centeredTransform })
+      }
       img.src = e.target.result
     }
     reader.readAsDataURL(file)
@@ -139,11 +160,16 @@ export default function CanvasEditor({ editorState, setEditorState, defaultMaskS
     })
   }
 
-  // Csak Transform visszaállítás (kép és FX megmarad)
+  const centerImage = () => {
+    if (!slot.uploadedImage) return
+    updateSlot({
+      imageTransform: calcCenteredTransform(slot.imageTransform),
+    })
+  }
+
   const resetTransform = () =>
     updateSlot({ imageTransform: defaultMaskSlot().imageTransform })
 
-  // Csak Visual FX visszaállítás (kép és transform megmarad)
   const resetVisualFX = () => {
     const d = defaultMaskSlot()
     updateSlot({
@@ -154,7 +180,6 @@ export default function CanvasEditor({ editorState, setEditorState, defaultMaskS
     })
   }
 
-  // Teljes mask reset (kép is törlődik)
   const resetMask = () => updateSlot(defaultMaskSlot())
 
   const currentMeta = GUI_META[maskId]
@@ -284,16 +309,27 @@ export default function CanvasEditor({ editorState, setEditorState, defaultMaskS
         <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-purple-300 uppercase tracking-wider">Transform</h3>
-            <button
-              onClick={resetTransform}
-              title="Visszaállítás alapértékre: X=0, Y=0, W=256, H=256, Rot=0°"
-              className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium
-                         bg-gray-800 hover:bg-gray-700 text-gray-400 border border-gray-700 transition-all"
-            >
-              <RefreshCw size={11} /> Reset
-            </button>
+            <div className="flex gap-1.5">
+              {slot.uploadedImage && (
+                <button
+                  onClick={centerImage}
+                  title="Kép középre igazítása a canvas-on"
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium
+                             bg-cyan-900 hover:bg-cyan-800 text-cyan-300 border border-cyan-700 transition-all"
+                >
+                  <Crosshair size={11} /> Center
+                </button>
+              )}
+              <button
+                onClick={resetTransform}
+                title="Visszaállítás alapértékre: X=0, Y=0, W=256, H=256, Rot=0°"
+                className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium
+                           bg-gray-800 hover:bg-gray-700 text-gray-400 border border-gray-700 transition-all"
+              >
+                <RefreshCw size={11} /> Reset
+              </button>
+            </div>
           </div>
-          {/* Alapértékek: X=0, Y=0, W=256, H=256, Rot=0 */}
           {[
             ['X Position', 'x',        -256, 256, 1,  'px',  0],
             ['Y Position', 'y',        -256, 256, 1,  'px',  0],
@@ -342,7 +378,6 @@ export default function CanvasEditor({ editorState, setEditorState, defaultMaskS
               <RefreshCw size={11} /> Reset
             </button>
           </div>
-          {/* Alapértékek: Opacity=1, Brightness=1, Contrast=1.05, Saturation=1 */}
           {[
             ['Opacity',    'opacity',    0,   1,   0.01, 1],
             ['Brightness', 'brightness', 0.1, 3,   0.05, 1],

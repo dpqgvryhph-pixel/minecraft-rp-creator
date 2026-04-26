@@ -7,10 +7,11 @@ import SaveModal from './SaveModal'
 
 const FIXED_DESCRIPTION = 'made by: GUICraft'
 
+// Pre-1.13 flat gui/ struktúra – helyes vanilla fájlnevek
 const LEGACY_PATHS = {
   inventory:   'assets/minecraft/textures/gui/inventory.png',
   chest:       'assets/minecraft/textures/gui/container/generic_54.png',
-  chest_small: 'assets/minecraft/textures/gui/container/container.png',
+  chest_small: 'assets/minecraft/textures/gui/container/chest.png',      // FIX: volt container.png
   crafting:    'assets/minecraft/textures/gui/container/crafting_table.png',
   furnace:     'assets/minecraft/textures/gui/container/furnace.png',
   dispenser:   'assets/minecraft/textures/gui/container/dispenser.png',
@@ -37,7 +38,6 @@ export default function ExportPanel({ packSettings, editorState }) {
     ? LEGACY_VERSIONS.has(packSettings.version)
     : false
 
-  // Count masks with uploaded images
   const masksWithImages = Object.entries(editorState.masks ?? {}).filter(([, s]) => !!s.uploadedImage)
 
   const getTexturePath = (maskId, legacy) => {
@@ -104,7 +104,7 @@ export default function ExportPanel({ packSettings, editorState }) {
     try {
       const zip = new JSZip()
       const safeName = (packSettings.name || 'MyResourcePack').replace(/[^a-zA-Z0-9_-]/g, '_')
-      const safeVer  = (packSettings.version || '').replace(/[\s–\-]+/g, '')
+      const safeVer  = (packSettings.version || '').replace(/[\s\u2013\-]+/g, '')
 
       zip.file('pack.mcmeta', JSON.stringify({
         pack: { pack_format: packFormat, description: FIXED_DESCRIPTION }
@@ -115,14 +115,12 @@ export default function ExportPanel({ packSettings, editorState }) {
         : await buildDefaultIcon()
       zip.file('pack.png', iconBlob)
 
-      // Export ALL masks that have an uploaded image
       for (const [maskId] of masksWithImages) {
         const texturePath = getTexturePath(maskId, isLegacy)
         const textureBlob = await getMaskCanvasBlob(maskId)
         zip.file(texturePath, textureBlob)
       }
 
-      // If no mask has an image, export the selected mask as empty canvas
       if (masksWithImages.length === 0) {
         const texturePath = getTexturePath(editorState.selectedMask, isLegacy)
         const textureBlob = await getMaskCanvasBlob(editorState.selectedMask)
@@ -164,7 +162,6 @@ export default function ExportPanel({ packSettings, editorState }) {
     ['Icon',           packSettings.iconDataUrl ? 'Egyedi' : 'Alap'],
   ]
 
-  // File structure: one row per modified mask + meta files
   const fileStructureRows = [
     { path: 'pack.mcmeta', desc: `pack_format: ${packFormat} · "${FIXED_DESCRIPTION}"` },
     { path: 'pack.png',    desc: packSettings.iconDataUrl ? 'Egyedi icon (64×64)' : 'Alap icon' },
