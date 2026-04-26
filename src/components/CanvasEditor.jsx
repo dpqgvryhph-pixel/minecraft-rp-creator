@@ -1,11 +1,12 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
 import { Upload, Eye, EyeOff, RotateCcw } from 'lucide-react'
-import { GUI_MASKS } from '../utils/guiMasks'
+import { GUI_MASKS, GUI_CATEGORIES, GUI_META } from '../utils/guiMasks'
 
 export default function CanvasEditor({ editorState, setEditorState }) {
   const canvasRef = useRef(null)
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0, imgX: 0, imgY: 0 })
+  const [openCategory, setOpenCategory] = useState('storage')
 
   const updateState = (updates) => setEditorState(prev => ({ ...prev, ...updates }))
 
@@ -24,12 +25,10 @@ export default function CanvasEditor({ editorState, setEditorState }) {
       }
     }
 
-    // Draw uploaded image with correct CSS filter syntax
     if (editorState.uploadedImage) {
       ctx.save()
       const { x, y, width, height, rotation } = editorState.imageTransform
       ctx.globalAlpha = editorState.opacity
-      // FIXED: saturate() not saturation()
       ctx.filter = `brightness(${editorState.brightness}) contrast(${editorState.contrast}) saturate(${editorState.saturation})`
       ctx.translate(x + width / 2, y + height / 2)
       ctx.rotate((rotation * Math.PI) / 180)
@@ -37,7 +36,6 @@ export default function CanvasEditor({ editorState, setEditorState }) {
       ctx.restore()
     }
 
-    // Draw GUI mask overlay
     if (editorState.showMaskOverlay) {
       const maskData = GUI_MASKS[editorState.selectedMask]
       if (maskData) {
@@ -64,9 +62,7 @@ export default function CanvasEditor({ editorState, setEditorState }) {
     }
   }, [editorState])
 
-  useEffect(() => {
-    drawCanvas()
-  }, [drawCanvas])
+  useEffect(() => { drawCanvas() }, [drawCanvas])
 
   const handleFileUpload = (file) => {
     if (!file || !file.type.startsWith('image/')) return
@@ -89,10 +85,7 @@ export default function CanvasEditor({ editorState, setEditorState }) {
     const canvas = canvasRef.current
     if (!canvas) return { x: 1, y: 1 }
     const rect = canvas.getBoundingClientRect()
-    return {
-      x: 256 / rect.width,
-      y: 256 / rect.height
-    }
+    return { x: 256 / rect.width, y: 256 / rect.height }
   }
 
   const handleCanvasMouseDown = (e) => {
@@ -112,7 +105,6 @@ export default function CanvasEditor({ editorState, setEditorState }) {
     const canvas = canvasRef.current
     if (!canvas) return
     const rect = canvas.getBoundingClientRect()
-    // FIXED: actually apply scale
     const scale = getCanvasScale()
     const dx = (e.clientX - rect.left - dragStart.x) * scale.x
     const dy = (e.clientY - rect.top - dragStart.y) * scale.y
@@ -125,19 +117,21 @@ export default function CanvasEditor({ editorState, setEditorState }) {
     })
   }
 
-  const masks = [
-    { id: 'inventory', label: 'Inventory' },
-    { id: 'chest', label: 'Large Chest' },
-    { id: 'crafting', label: 'Crafting Table' },
-    { id: 'furnace', label: 'Furnace' },
-  ]
+  const currentMeta = GUI_META[editorState.selectedMask]
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6">
       {/* Canvas Area */}
       <div className="space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <h2 className="text-lg font-bold text-white">GUI Editor</h2>
+          <div>
+            <h2 className="text-lg font-bold text-white">GUI Editor</h2>
+            {currentMeta && (
+              <p className="text-xs text-gray-500 mt-0.5">
+                Since {currentMeta.since} · {currentMeta.label}
+              </p>
+            )}
+          </div>
           <div className="flex gap-2">
             <button
               onClick={() => updateState({ showMaskOverlay: !editorState.showMaskOverlay })}
@@ -164,21 +158,43 @@ export default function CanvasEditor({ editorState, setEditorState }) {
           </div>
         </div>
 
-        {/* Mask selector */}
-        <div className="flex gap-2 flex-wrap">
-          {masks.map(m => (
-            <button
-              key={m.id}
-              onClick={() => updateState({ selectedMask: m.id })}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                editorState.selectedMask === m.id
-                  ? 'bg-cyan-700 text-cyan-100 border border-cyan-500'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700'
-              }`}
-            >
-              {m.label}
-            </button>
-          ))}
+        {/* Category tabs + mask selector */}
+        <div className="space-y-2">
+          {/* Category tabs */}
+          <div className="flex gap-1 flex-wrap">
+            {GUI_CATEGORIES.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setOpenCategory(cat.id)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                  openCategory === cat.id
+                    ? 'bg-purple-800 text-purple-100 border border-purple-500'
+                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Masks in selected category */}
+          <div className="flex gap-1.5 flex-wrap">
+            {Object.entries(GUI_META)
+              .filter(([, meta]) => meta.category === openCategory)
+              .map(([id, meta]) => (
+                <button
+                  key={id}
+                  onClick={() => updateState({ selectedMask: id })}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                    editorState.selectedMask === id
+                      ? 'bg-cyan-700 text-cyan-100 border border-cyan-500'
+                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700'
+                  }`}
+                >
+                  {meta.label.replace(/ \(.*\)/, '')}
+                </button>
+              ))}
+          </div>
         </div>
 
         {/* Canvas */}
