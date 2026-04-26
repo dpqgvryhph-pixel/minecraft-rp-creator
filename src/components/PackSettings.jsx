@@ -2,9 +2,9 @@ import { useRef, useState, useCallback, useEffect } from 'react'
 import { Info, Upload, RotateCcw, CheckCircle, AlertTriangle, HelpCircle } from 'lucide-react'
 import { PACK_FORMATS, LEGACY_VERSIONS } from '../utils/packFormats'
 
-const FIXED_DESCRIPTION = 'made by: aka_Colibry'
+// Fix leírás – mindig ez kerül a pack.mcmeta-ba
+const FIXED_DESCRIPTION = 'made by: GUICraft'
 
-// ── Version groups ──────────────────────────────────────────────────────────
 const VERSION_GROUPS = [
   {
     id: 'guaranteed',
@@ -50,7 +50,6 @@ export default function PackSettings({ packSettings, setPackSettings }) {
   const [iconTextColor, setIconTextColor] = useState('#ffffff')
   const [iconImg, setIconImg]             = useState(null)
 
-  // safe version lookup
   const selectedVerObj = Array.isArray(PACK_FORMATS)
     ? PACK_FORMATS.find(v => v.label === packSettings.version)
     : null
@@ -60,15 +59,12 @@ export default function PackSettings({ packSettings, setPackSettings }) {
     ? LEGACY_VERSIONS.has(packSettings.version)
     : false
 
-  // ── Draw icon canvas ──────────────────────────────────────────────────────
   const drawIcon = useCallback(() => {
     const canvas = iconCanvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
-    // bg
     ctx.fillStyle = iconBgColor
     ctx.fillRect(0, 0, 64, 64)
-    // subtle checkerboard
     for (let cy = 0; cy < 64; cy += 8) {
       for (let cx = 0; cx < 64; cx += 8) {
         if (((cx + cy) / 8) % 2 === 0) {
@@ -77,9 +73,7 @@ export default function PackSettings({ packSettings, setPackSettings }) {
         }
       }
     }
-    // uploaded image
     if (iconImg) ctx.drawImage(iconImg, 0, 0, 64, 64)
-    // text overlay
     const txt = (iconText || '').trim().slice(0, 6)
     if (txt) {
       ctx.fillStyle = iconTextColor
@@ -113,7 +107,6 @@ export default function PackSettings({ packSettings, setPackSettings }) {
     update('iconDataUrl', null)
   }
 
-  // ── Support badge ─────────────────────────────────────────────────────────
   const SupportBadge = ({ s }) => {
     const cfg = {
       guaranteed: { Icon: CheckCircle,   cls: 'text-green-400 bg-green-950/50 border-green-800',    label: 'Garantált' },
@@ -139,7 +132,7 @@ export default function PackSettings({ packSettings, setPackSettings }) {
       <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 space-y-5">
         <h3 className="text-sm font-bold text-purple-300 uppercase tracking-wider">Metadata</h3>
 
-        {/* Pack name */}
+        {/* Pack neve */}
         <div>
           <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1">
             Pack neve <span className="text-red-400">*</span>
@@ -177,23 +170,30 @@ export default function PackSettings({ packSettings, setPackSettings }) {
           </div>
         </div>
 
-        {/* Fixed description display */}
+        {/* Leírás – fix, nem szerkeszthető */}
         <div>
           <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1">Leírás (fix)</label>
-          <div className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 text-cyan-400 text-sm font-mono
-                          select-none cursor-not-allowed">
+          <div className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2
+                          text-cyan-400 text-sm font-mono select-none cursor-not-allowed">
             {FIXED_DESCRIPTION}
           </div>
-          <p className="text-xs text-gray-600 mt-1">A leírás automatikusan generálódik, nem módosítható.</p>
+          <p className="text-xs text-gray-600 mt-1">Automatikusan generálódik – nem módosítható.</p>
         </div>
 
-        {/* Author (display only) */}
+        {/* Szerző – szabadon szerkeszthető */}
         <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1">Szerző</label>
-          <div className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 text-gray-300 text-sm font-mono
-                          select-none cursor-not-allowed">
-            aka_Colibry
-          </div>
+          <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1">
+            Szerző
+          </label>
+          <input
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm
+                       focus:outline-none focus:border-purple-500 transition-colors"
+            value={packSettings.author || ''}
+            onChange={e => update('author', e.target.value)}
+            placeholder="pl. aka_Colibry"
+            maxLength={64}
+          />
+          <p className="text-xs text-gray-600 mt-1">Csak helyi referencia – nem kerül bele a pack fájlba.</p>
         </div>
       </div>
 
@@ -209,7 +209,6 @@ export default function PackSettings({ packSettings, setPackSettings }) {
         </div>
 
         <div className="flex gap-5 flex-wrap items-start">
-          {/* Preview canvas (64×64) */}
           <div className="shrink-0">
             <canvas ref={iconCanvasRef} width={64} height={64}
               className="rounded-lg border-2 border-gray-600"
@@ -218,7 +217,6 @@ export default function PackSettings({ packSettings, setPackSettings }) {
           </div>
 
           <div className="flex-1 min-w-[200px] space-y-3">
-            {/* Background color */}
             <div>
               <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Háttérszín</label>
               <div className="flex flex-wrap gap-1.5">
@@ -226,9 +224,7 @@ export default function PackSettings({ packSettings, setPackSettings }) {
                   <button key={c} onClick={() => setIconBgColor(c)}
                     style={{ background: c }}
                     className={`w-6 h-6 rounded border-2 transition-all ${
-                      iconBgColor === c
-                        ? 'border-cyan-400 scale-110'
-                        : 'border-gray-700 hover:border-gray-500'
+                      iconBgColor === c ? 'border-cyan-400 scale-110' : 'border-gray-700 hover:border-gray-500'
                     }`} />
                 ))}
                 <label className="relative w-6 h-6 rounded border-2 border-dashed border-gray-600
@@ -240,7 +236,6 @@ export default function PackSettings({ packSettings, setPackSettings }) {
               </div>
             </div>
 
-            {/* Text overlay */}
             <div>
               <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Szöveg (max 6 kar.)</label>
               <div className="flex gap-2">
@@ -261,7 +256,6 @@ export default function PackSettings({ packSettings, setPackSettings }) {
               </div>
             </div>
 
-            {/* Image upload */}
             <div>
               <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Kép feltöltése</label>
               <label
@@ -280,11 +274,10 @@ export default function PackSettings({ packSettings, setPackSettings }) {
         </div>
       </div>
 
-      {/* ── Version picker ── */}
+      {/* ── Verzió választó ── */}
       <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 space-y-4">
         <h3 className="text-sm font-bold text-yellow-300 uppercase tracking-wider">Minecraft verzió</h3>
 
-        {/* Current selection */}
         <div className="flex items-center gap-3 bg-gray-800 rounded-lg px-4 py-3 border border-gray-700">
           <div className="flex-1">
             <p className="text-white font-semibold text-sm">{packSettings.version}</p>
@@ -295,7 +288,6 @@ export default function PackSettings({ packSettings, setPackSettings }) {
           <SupportBadge s={support} />
         </div>
 
-        {/* Group tabs */}
         <div className="flex gap-1.5 flex-wrap">
           {VERSION_GROUPS.map(g => (
             <button key={g.id} onClick={() => setOpenGroup(g.id)}
@@ -309,12 +301,10 @@ export default function PackSettings({ packSettings, setPackSettings }) {
           ))}
         </div>
 
-        {/* Group description */}
         <p className="text-xs text-gray-500">
           {VERSION_GROUPS.find(g => g.id === openGroup)?.desc ?? ''}
         </p>
 
-        {/* Version buttons */}
         <div className="flex flex-wrap gap-1.5">
           {(VERSION_GROUPS.find(g => g.id === openGroup)?.versions ?? []).map(v => (
             <button key={v.label} onClick={() => update('version', v.label)}
@@ -334,20 +324,18 @@ export default function PackSettings({ packSettings, setPackSettings }) {
           ))}
         </div>
 
-        {/* Legacy warning */}
         {isLegacy && (
           <div className="flex items-start gap-3 bg-orange-950/40 border border-orange-700/50 rounded-xl p-3">
             <AlertTriangle size={14} className="text-orange-400 shrink-0 mt-0.5" />
             <p className="text-xs text-orange-300">
               <strong>Legacy mód:</strong> 1.13 előtt a GUI texturák <code>gui/</code> almappában
-              vannak (nincs <code>container/</code> almappa). Az export megpróbálja a helyes
-              legacy útvonalat alkalmazni, de egyes GUI-k (Loom, Grindstone stb.) nem léteztek.
+              vannak. Az export megpróbálja a helyes legacy útvonalat alkalmazni.
             </p>
           </div>
         )}
       </div>
 
-      {/* pack.mcmeta preview */}
+      {/* pack.mcmeta előnézet */}
       <div className="bg-gray-900 border border-gray-700 rounded-xl p-4">
         <div className="flex items-start gap-3">
           <Info size={16} className="text-cyan-400 mt-0.5 shrink-0" />

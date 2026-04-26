@@ -4,9 +4,8 @@ import { Download, FolderOpen, CheckCircle, Loader, FileText, AlertCircle, Alert
 import { PACK_FORMATS, LEGACY_VERSIONS } from '../utils/packFormats'
 import { GUI_TEXTURE_PATHS, GUI_META } from '../utils/guiMasks'
 
-const FIXED_DESCRIPTION = 'made by: aka_Colibry'
+const FIXED_DESCRIPTION = 'made by: GUICraft'
 
-// Pre-1.13 legacy flat path overrides
 const LEGACY_PATHS = {
   inventory:   'assets/minecraft/textures/gui/inventory.png',
   chest:       'assets/minecraft/textures/gui/container/generic_54.png',
@@ -27,17 +26,15 @@ export default function ExportPanel({ packSettings, editorState }) {
   const [done, setDone]           = useState(false)
   const [error, setError]         = useState(null)
 
-  // --- version lookup (safe) ---
   const selectedVer = Array.isArray(PACK_FORMATS)
     ? PACK_FORMATS.find(v => v.label === packSettings.version)
     : null
-  const packFormat = selectedVer?.format ?? 55   // fallback: 1.21.5
+  const packFormat = selectedVer?.format ?? 55
   const support    = selectedVer?.support ?? 'likely'
   const isLegacy   = LEGACY_VERSIONS instanceof Set
     ? LEGACY_VERSIONS.has(packSettings.version)
     : false
 
-  // --- helpers ---
   const getTexturePath = () => {
     const maskId = editorState.selectedMask
     const modern = `assets/minecraft/textures/${GUI_TEXTURE_PATHS[maskId] ?? 'gui/container/inventory.png'}`
@@ -69,9 +66,7 @@ export default function ExportPanel({ packSettings, editorState }) {
         b => b ? resolve(b) : reject(new Error('Canvas toBlob returned null')),
         'image/png'
       )
-    } catch (e) {
-      reject(e)
-    }
+    } catch (e) { reject(e) }
   })
 
   const dataUrlToBlob = (dataUrl) => {
@@ -82,82 +77,58 @@ export default function ExportPanel({ packSettings, editorState }) {
       const arr   = new Uint8Array(bytes.length)
       for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i)
       return new Blob([arr], { type: mime })
-    } catch {
-      return null
-    }
+    } catch { return null }
   }
 
   const buildDefaultIcon = () => new Promise(resolve => {
     const canvas = document.createElement('canvas')
-    canvas.width  = 64
-    canvas.height = 64
+    canvas.width  = 64; canvas.height = 64
     const ctx = canvas.getContext('2d')
     ctx.fillStyle = '#1a1a2e'; ctx.fillRect(0, 0, 64, 64)
     ctx.fillStyle = '#7c3aed'; ctx.fillRect(0, 0, 64, 32)
     ctx.fillStyle = '#06b6d4'; ctx.fillRect(0, 32, 64, 32)
     ctx.fillStyle = '#ffffff'
     ctx.font = 'bold 12px monospace'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
     ctx.fillText('MC', 32, 48)
     canvas.toBlob(b => resolve(b), 'image/png')
   })
 
-  // --- export ---
   const handleExport = async () => {
-    setExporting(true)
-    setDone(false)
-    setError(null)
+    setExporting(true); setDone(false); setError(null)
     try {
       const zip = new JSZip()
       const safeName = (packSettings.name || 'MyResourcePack').replace(/[^a-zA-Z0-9_-]/g, '_')
       const safeVer  = (packSettings.version || '').replace(/[\s–\-]+/g, '')
 
-      // pack.mcmeta – description always fixed
       zip.file('pack.mcmeta', JSON.stringify({
-        pack: {
-          pack_format: packFormat,
-          description: FIXED_DESCRIPTION,
-        }
+        pack: { pack_format: packFormat, description: FIXED_DESCRIPTION }
       }, null, 2))
 
-      // pack.png
       const iconBlob = packSettings.iconDataUrl
         ? (dataUrlToBlob(packSettings.iconDataUrl) ?? await buildDefaultIcon())
         : await buildDefaultIcon()
       zip.file('pack.png', iconBlob)
 
-      // GUI texture
       const texturePath = getTexturePath()
       const textureBlob = await getCanvasBlob()
       zip.file(texturePath, textureBlob)
 
-      const content = await zip.generateAsync({
-        type: 'blob',
-        compression: 'DEFLATE',
-        compressionOptions: { level: 6 },
-      })
-
+      const content = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } })
       const url = URL.createObjectURL(content)
       const a   = document.createElement('a')
-      a.href     = url
-      a.download = `${safeName}_${safeVer}.zip`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      a.href = url; a.download = `${safeName}_${safeVer}.zip`
+      document.body.appendChild(a); a.click()
+      document.body.removeChild(a); URL.revokeObjectURL(url)
 
       setDone(true)
       setTimeout(() => setDone(false), 4000)
     } catch (err) {
       console.error('Export error:', err)
       setError(err?.message ?? String(err))
-    } finally {
-      setExporting(false)
-    }
+    } finally { setExporting(false) }
   }
 
-  // --- UI helpers ---
   const texturePath = getTexturePath()
   const maskMeta    = GUI_META?.[editorState.selectedMask]
   const maskLabel   = maskMeta?.label ?? editorState.selectedMask ?? '?'
@@ -193,7 +164,6 @@ export default function ExportPanel({ packSettings, editorState }) {
         <p className="text-sm text-gray-400">Teljes Minecraft-ready .zip generálása – 100% client-side</p>
       </div>
 
-      {/* Summary */}
       <div className="bg-gray-900 border border-gray-700 rounded-xl p-5 space-y-3">
         <h3 className="text-sm font-bold text-purple-300 uppercase tracking-wider">Pack Summary</h3>
         <div className="grid grid-cols-2 gap-3 text-sm">
@@ -209,26 +179,21 @@ export default function ExportPanel({ packSettings, editorState }) {
         </div>
       </div>
 
-      {/* Fixed description info */}
       <div className="flex items-center gap-3 bg-gray-900 border border-gray-700 rounded-xl px-4 py-3">
         <span className="text-xs text-gray-500">📝 Leírás (fix):</span>
         <code className="text-cyan-400 text-xs font-mono">{FIXED_DESCRIPTION}</code>
       </div>
 
-      {/* Compat banner (only for non-guaranteed) */}
       {support !== 'guaranteed' && (
         <div className={`flex items-start gap-3 border rounded-xl p-4 ${supportCfg.bgCls}`}>
           <SupportIcon size={16} className={`${supportCfg.cls} shrink-0 mt-0.5`} />
           <p className={`text-sm ${supportCfg.cls}`}>
-            {support === 'likely' &&
-              'Ez a verzió valószínűleg működik. A GUI texture útvonalak 1.13-ban változtak.'}
-            {support === 'maybe' &&
-              <><strong>Legacy mód (pre-1.13):</strong> Régi fájlstruktúra – egyes GUI-k még nem léteztek. Az export a helyes legacy útvonalon menti a fájlt.</> }
+            {support === 'likely' && 'Ez a verzió valószínűleg működik. A GUI texture útvonalak 1.13-ban változtak.'}
+            {support === 'maybe'  && <><strong>Legacy mód (pre-1.13):</strong> Régi fájlstruktúra – egyes GUI-k még nem léteztek.</>}
           </p>
         </div>
       )}
 
-      {/* ZIP structure */}
       <div className="bg-gray-900 border border-gray-700 rounded-xl p-5 space-y-3">
         <div className="flex items-center gap-2">
           <FolderOpen size={16} className="text-yellow-400" />
@@ -247,7 +212,6 @@ export default function ExportPanel({ packSettings, editorState }) {
         </div>
       </div>
 
-      {/* No image warning */}
       {!editorState.uploadedImage && (
         <div className="flex items-start gap-3 bg-yellow-950/40 border border-yellow-700/50 rounded-xl p-4">
           <AlertCircle size={16} className="text-yellow-400 shrink-0 mt-0.5" />
@@ -258,7 +222,6 @@ export default function ExportPanel({ packSettings, editorState }) {
         </div>
       )}
 
-      {/* Error */}
       {error && (
         <div className="flex items-start gap-3 bg-red-950/40 border border-red-700/50 rounded-xl p-4">
           <AlertCircle size={16} className="text-red-400 shrink-0 mt-0.5" />
@@ -266,7 +229,6 @@ export default function ExportPanel({ packSettings, editorState }) {
         </div>
       )}
 
-      {/* Export button */}
       <button
         onClick={handleExport}
         disabled={exporting}
