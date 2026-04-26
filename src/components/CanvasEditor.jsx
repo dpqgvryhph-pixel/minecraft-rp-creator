@@ -503,7 +503,7 @@ export default function CanvasEditor({ editorState, setEditorState, defaultMaskS
             )
           })()}
 
-          {[
+          {slot.imageTransform && [
             ['X Position', 'x',       -256, 256, 1, 'px', 0],
             ['Y Position', 'y',       -256, 256, 1, 'px', 0],
             ['Width',      'width',     32, 512, 1, 'px', 256],
