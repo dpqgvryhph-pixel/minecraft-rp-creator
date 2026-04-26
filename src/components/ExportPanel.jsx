@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import JSZip from 'jszip'
-import { Download, FolderOpen, CheckCircle, Loader, FileText, AlertCircle, AlertTriangle, HelpCircle } from 'lucide-react'
+import { Download, FolderOpen, CheckCircle, Loader, FileText, AlertCircle, AlertTriangle, HelpCircle, Cloud } from 'lucide-react'
 import { PACK_FORMATS, LEGACY_VERSIONS } from '../utils/packFormats'
 import { GUI_TEXTURE_PATHS, GUI_META } from '../utils/guiMasks'
+import SaveModal from './SaveModal'
 
 const FIXED_DESCRIPTION = 'made by: GUICraft'
 
@@ -25,6 +26,7 @@ export default function ExportPanel({ packSettings, editorState }) {
   const [exporting, setExporting] = useState(false)
   const [done, setDone]           = useState(false)
   const [error, setError]         = useState(null)
+  const [saveModalOpen, setSaveModalOpen] = useState(false)
 
   const selectedVer = Array.isArray(PACK_FORMATS)
     ? PACK_FORMATS.find(v => v.label === packSettings.version)
@@ -229,6 +231,7 @@ export default function ExportPanel({ packSettings, editorState }) {
         </div>
       )}
 
+      {/* Export gomb */}
       <button
         onClick={handleExport}
         disabled={exporting}
@@ -243,9 +246,31 @@ export default function ExportPanel({ packSettings, editorState }) {
                      <><Download size={20} /> Resource Pack letöltése (.zip)</>}
       </button>
 
+      {/* Save to Cloud gomb – prémium */}
+      <div className="relative">
+        <div className="absolute -top-2 left-4 z-10">
+          <span className="bg-gradient-to-r from-yellow-500 to-orange-500 text-black text-xs font-black px-2 py-0.5 rounded-full uppercase tracking-wide">⭐ Prémium</span>
+        </div>
+        <button
+          onClick={() => setSaveModalOpen(true)}
+          className="w-full py-4 rounded-xl font-bold text-base flex items-center justify-center gap-3 bg-gray-800 hover:bg-gray-750 border border-dashed border-cyan-700/60 hover:border-cyan-500 text-cyan-300 hover:text-cyan-200 transition-all group mt-1"
+        >
+          <Cloud size={20} className="group-hover:scale-110 transition-transform" />
+          Mentés a felhőbe
+        </button>
+      </div>
+
       <p className="text-xs text-gray-600 text-center">
         A ZIP 100% client-side generálódik (JSZip) – semmilyen adat nem kerül szerverre.
       </p>
+
+      <SaveModal
+        isOpen={saveModalOpen}
+        onClose={() => setSaveModalOpen(false)}
+        packSettings={packSettings}
+        editorState={editorState}
+        onLoadPack={(data) => console.log('Load pack:', data)}
+      />
     </div>
   )
 }
