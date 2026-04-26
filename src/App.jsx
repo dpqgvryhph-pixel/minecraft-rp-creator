@@ -6,6 +6,9 @@ import PackSettings from './components/PackSettings'
 import ExportPanel from './components/ExportPanel'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
+import { PACK_FORMATS } from './utils/packFormats'
+
+const DEFAULT_VERSION = PACK_FORMATS[PACK_FORMATS.length - 1].label   // always latest
 
 function App() {
   const [activeTab, setActiveTab] = useState('editor')
@@ -13,11 +16,11 @@ function App() {
   const [packSettings, setPackSettings] = useState({
     name: 'MyResourcePack',
     description: 'Created with MC Resource Pack Creator',
-    version: '1.21 - 1.21.1',
-    author: ''
+    version: DEFAULT_VERSION,
+    author: '',
+    iconDataUrl: null,   // base64 PNG – custom pack icon drawn by user
   })
 
-  // Single source of truth — passed to both CanvasEditor and ExportPanel
   const [editorState, setEditorState] = useState({
     selectedMask: 'inventory',
     uploadedImage: null,
@@ -25,14 +28,14 @@ function App() {
     opacity: 1,
     brightness: 1,
     contrast: 1,
-    saturation: 1,        // used as CSS saturate() value
-    showMaskOverlay: true
+    saturation: 1,
+    showMaskOverlay: true,
   })
 
   const tabs = [
-    { id: 'editor', label: 'GUI Editor', icon: Image },
+    { id: 'editor',   label: 'GUI Editor',   icon: Image },
     { id: 'settings', label: 'Pack Settings', icon: Settings },
-    { id: 'export', label: 'Export', icon: Download },
+    { id: 'export',   label: 'Export',        icon: Download },
   ]
 
   return (
@@ -43,36 +46,23 @@ function App() {
         <main className="flex-1 overflow-auto p-6">
           <AnimatePresence mode="wait">
             {activeTab === 'editor' && (
-              <motion.div
-                key="editor"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-              >
+              <motion.div key="editor"
+                initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
                 <CanvasEditor editorState={editorState} setEditorState={setEditorState} />
               </motion.div>
             )}
             {activeTab === 'settings' && (
-              <motion.div
-                key="settings"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-              >
+              <motion.div key="settings"
+                initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
                 <PackSettings packSettings={packSettings} setPackSettings={setPackSettings} />
               </motion.div>
             )}
             {activeTab === 'export' && (
-              <motion.div
-                key="export"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-              >
-                {/* Both packSettings AND editorState passed — export needs both */}
+              <motion.div key="export"
+                initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
                 <ExportPanel packSettings={packSettings} editorState={editorState} />
               </motion.div>
             )}
