@@ -9,17 +9,15 @@ import Header from './components/Header'
 import { DEFAULT_VERSION } from './utils/packFormats'
 import { GUI_MASKS } from './utils/guiMasks'
 
-// Alapértelmezett értékek egy mask slothoz
 export const DEFAULT_MASK_SLOT = () => ({
-  uploadedImage: null,
+  uploadedImage:  null,
   imageTransform: { x: 0, y: 0, width: 256, height: 256, rotation: 0 },
-  opacity:    1,
-  brightness: 1,
-  contrast:   1.05,
-  saturation: 1,
+  opacity:     1,
+  brightness:  1,
+  contrast:    1.05,
+  saturation:  1,
 })
 
-// Minden mask-hoz külön slot az indulásnál
 const buildInitialMasks = () => {
   const masks = {}
   Object.keys(GUI_MASKS).forEach(id => { masks[id] = DEFAULT_MASK_SLOT() })
@@ -30,21 +28,21 @@ function App() {
   const [activeTab, setActiveTab] = useState('editor')
 
   const [packSettings, setPackSettings] = useState({
-    name: 'MyResourcePack',
+    name:        'MyResourcePack',
     description: 'made by: GUICraft',
-    version: DEFAULT_VERSION,
-    author: '',
+    version:     DEFAULT_VERSION,
+    author:      '',
     iconDataUrl: null,
   })
 
   const [editorState, setEditorState] = useState({
-    selectedMask: 'inventory',
+    selectedMask:    'inventory',
     showMaskOverlay: true,
-    masks: buildInitialMasks(),
+    masks:           buildInitialMasks(),
   })
 
   const tabs = [
-    { id: 'editor',   label: 'GUI Editor',   icon: Image },
+    { id: 'editor',   label: 'GUI Editor',   icon: Image    },
     { id: 'settings', label: 'Pack Settings', icon: Settings },
     { id: 'export',   label: 'Export',        icon: Download },
   ]
@@ -59,7 +57,7 @@ function App() {
             {activeTab === 'editor' && (
               <motion.div key="editor"
                 initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
+                exit={{ opacity: 0, x: -20 }}   transition={{ duration: 0.2 }}>
                 <CanvasEditor
                   editorState={editorState}
                   setEditorState={setEditorState}
@@ -70,14 +68,14 @@ function App() {
             {activeTab === 'settings' && (
               <motion.div key="settings"
                 initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
+                exit={{ opacity: 0, x: -20 }}   transition={{ duration: 0.2 }}>
                 <PackSettings packSettings={packSettings} setPackSettings={setPackSettings} />
               </motion.div>
             )}
             {activeTab === 'export' && (
               <motion.div key="export"
                 initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
+                exit={{ opacity: 0, x: -20 }}   transition={{ duration: 0.2 }}>
                 <ExportPanel packSettings={packSettings} editorState={editorState} />
               </motion.div>
             )}
