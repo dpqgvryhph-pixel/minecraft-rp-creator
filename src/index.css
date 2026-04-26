@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    @apply bg-gray-950 text-gray-100 font-mono;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-900;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-purple-700 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-purple-500;
+  }
+}
+
+@layer components {
+  .gamer-panel {
+    @apply bg-gray-900 border border-gray-700 rounded-xl;
+  }
+
+  .gamer-btn {
+    @apply px-4 py-2 rounded-lg font-semibold transition-all duration-200 cursor-pointer;
+  }
+
+  .gamer-btn-primary {
+    @apply gamer-btn bg-purple-700 hover:bg-purple-600 text-white shadow-lg;
+  }
+
+  .gamer-btn-success {
+    @apply gamer-btn bg-green-700 hover:bg-green-600 text-white shadow-lg;
+  }
+
+  .gamer-btn-danger {
+    @apply gamer-btn bg-red-700 hover:bg-red-600 text-white;
+  }
+
+  .gamer-input {
+    @apply bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-gray-100
+           focus:outline-none focus:border-purple-500 transition-colors w-full;
+  }
+
+  .gamer-label {
+    @apply text-xs text-gray-400 uppercase tracking-wider mb-1 block;
+  }
+
+  .slider-gamer {
+    @apply w-full h-2 rounded-full appearance-none cursor-pointer;
+    background: linear-gradient(to right, #7c3aed, #06b6d4);
+  }
+
+  .canvas-wrapper {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+}
+
+@layer utilities {
+  .text-glow {
+    text-shadow: 0 0 10px currentColor;
+  }
+
+  .border-glow {
+    box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.5), 0 0 15px rgba(124, 58, 237, 0.2);
+  }
+
+  .drop-zone-active {
+    @apply border-purple-400 bg-purple-950/30;
+  }
+}
