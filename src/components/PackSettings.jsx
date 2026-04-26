@@ -2,9 +2,6 @@ import { useRef, useState, useCallback, useEffect } from 'react'
 import { Info, Upload, RotateCcw, CheckCircle, AlertTriangle, HelpCircle } from 'lucide-react'
 import { PACK_FORMATS, LEGACY_VERSIONS } from '../utils/packFormats'
 
-// Fix leírás – mindig ez kerül a pack.mcmeta-ba
-const FIXED_DESCRIPTION = 'made by: GUICraft'
-
 const VERSION_GROUPS = [
   {
     id: 'guaranteed',
@@ -44,7 +41,9 @@ export default function PackSettings({ packSettings, setPackSettings }) {
   const update = (key, value) => setPackSettings(prev => ({ ...prev, [key]: value }))
 
   const [openGroup, setOpenGroup]         = useState('guaranteed')
-  const iconCanvasRef                     = useRef(null)
+  // Két külön canvas ref: egy a szerkesztőhöz, egy az előnézethez
+  const editorCanvasRef                   = useRef(null)
+  const previewCanvasRef                  = useRef(null)
   const [iconBgColor, setIconBgColor]     = useState('#1a1a2e')
   const [iconText, setIconText]           = useState('')
   const [iconTextColor, setIconTextColor] = useState('#ffffff')
@@ -59,12 +58,13 @@ export default function PackSettings({ packSettings, setPackSettings }) {
     ? LEGACY_VERSIONS.has(packSettings.version)
     : false
 
-  const drawIcon = useCallback(() => {
-    const canvas = iconCanvasRef.current
-    if (!canvas) return
+  // Ikont rajzol a megadott canvas-ra, visszaadja a dataUrl-t
+  const renderIconToCanvas = useCallback((canvas) => {
+    if (!canvas) return null
     const ctx = canvas.getContext('2d')
     ctx.fillStyle = iconBgColor
     ctx.fillRect(0, 0, 64, 64)
+    // Sakktábla minta
     for (let cy = 0; cy < 64; cy += 8) {
       for (let cx = 0; cx < 64; cx += 8) {
         if (((cx + cy) / 8) % 2 === 0) {
@@ -83,10 +83,15 @@ export default function PackSettings({ packSettings, setPackSettings }) {
       ctx.textBaseline = 'middle'
       ctx.fillText(txt, 32, 32)
     }
-    update('iconDataUrl', canvas.toDataURL('image/png'))
+    return canvas.toDataURL('image/png')
   }, [iconBgColor, iconText, iconTextColor, iconImg])
 
-  useEffect(() => { drawIcon() }, [drawIcon])
+  // Frissítés: editor canvas + preview canvas + packSettings.iconDataUrl
+  useEffect(() => {
+    const dataUrl = renderIconToCanvas(editorCanvasRef.current)
+    renderIconToCanvas(previewCanvasRef.current)
+    if (dataUrl) update('iconDataUrl', dataUrl)
+  }, [renderIconToCanvas])
 
   const handleIconFile = (file) => {
     if (!file || !file.type.startsWith('image/')) return
@@ -125,7 +130,7 @@ export default function PackSettings({ packSettings, setPackSettings }) {
     <div className="max-w-2xl space-y-6">
       <div>
         <h2 className="text-lg font-bold text-white mb-1">Pack Settings</h2>
-        <p className="text-sm text-gray-400">Pack neve, ikonja és célverzió beállítása</p>
+        <p className="text-sm text-gray-400">Pack neve, leírása, ikonja és célverzió beállítása</p>
       </div>
 
       {/* ── Metadata ── */}
@@ -135,7 +140,7 @@ export default function PackSettings({ packSettings, setPackSettings }) {
         {/* Pack neve */}
         <div>
           <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1">
-            Pack neve <span className="text-red-400">*</span>
+            Pack neve (in-game menüben látható) <span className="text-red-400">*</span>
           </label>
           <input
             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm
@@ -145,22 +150,27 @@ export default function PackSettings({ packSettings, setPackSettings }) {
             placeholder="MyAwesomePack"
             maxLength={64}
           />
-          <p className="text-xs text-gray-600 mt-1">{(packSettings.name || '').length}/64</p>
+          <p className="text-xs text-gray-600 mt-1">{(packSettings.name || '').length}/64 karakter</p>
 
-          {/* In-game preview */}
-          <div className="mt-2 rounded-lg overflow-hidden border border-gray-700 bg-gray-950">
+          {/* In-game előnézet – külön canvas ref */}
+          <div className="mt-3 rounded-lg overflow-hidden border border-gray-700 bg-gray-950">
             <p className="px-3 pt-2 pb-1 text-xs text-gray-600 font-mono">Előnézet – Minecraft pack lista</p>
             <div className="flex items-center gap-3 px-3 pb-3">
-              <canvas ref={iconCanvasRef} width={64} height={64}
+              {/* Előnézet canvas – KÜLÖN ref! */}
+              <canvas
+                ref={previewCanvasRef}
+                width={64}
+                height={64}
                 className="rounded border border-gray-700 shrink-0"
-                style={{ width: 32, height: 32, imageRendering: 'pixelated' }} />
+                style={{ width: 32, height: 32, imageRendering: 'pixelated' }}
+              />
               <div>
                 <p className="text-white text-sm font-bold leading-tight font-mono"
                    style={{ textShadow: '1px 1px 0 #000' }}>
                   {packSettings.name || 'MyResourcePack'}
                 </p>
                 <p className="text-gray-400 text-xs leading-tight mt-0.5 font-mono">
-                  {FIXED_DESCRIPTION}
+                  {packSettings.description || '(nincs leírás)'}
                 </p>
                 <p className="text-gray-600 text-xs mt-0.5 font-mono">
                   pack_format: {packFormat}
@@ -170,20 +180,28 @@ export default function PackSettings({ packSettings, setPackSettings }) {
           </div>
         </div>
 
-        {/* Leírás – fix, nem szerkeszthető */}
-        <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1">Leírás (fix)</label>
-          <div className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2
-                          text-cyan-400 text-sm font-mono select-none cursor-not-allowed">
-            {FIXED_DESCRIPTION}
-          </div>
-          <p className="text-xs text-gray-600 mt-1">Automatikusan generálódik – nem módosítható.</p>
-        </div>
-
-        {/* Szerző – szabadon szerkeszthető */}
+        {/* Leírás – szerkeszthető */}
         <div>
           <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1">
-            Szerző
+            Leírás (in-game menüben látható)
+          </label>
+          <input
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm
+                       focus:outline-none focus:border-purple-500 transition-colors"
+            value={packSettings.description}
+            onChange={e => update('description', e.target.value)}
+            placeholder="made by: Neved"
+            maxLength={128}
+          />
+          <p className="text-xs text-gray-600 mt-1">
+            {(packSettings.description || '').length}/128 – bekerül a pack.mcmeta fájlba.
+          </p>
+        </div>
+
+        {/* Szerző */}
+        <div>
+          <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1">
+            Szerző (csak helyi megjegyzés)
           </label>
           <input
             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm
@@ -193,7 +211,7 @@ export default function PackSettings({ packSettings, setPackSettings }) {
             placeholder="pl. aka_Colibry"
             maxLength={64}
           />
-          <p className="text-xs text-gray-600 mt-1">Csak helyi referencia – nem kerül bele a pack fájlba.</p>
+          <p className="text-xs text-gray-600 mt-1">Nem kerül bele a pack fájlba – csak helyi referencia.</p>
         </div>
       </div>
 
@@ -209,10 +227,15 @@ export default function PackSettings({ packSettings, setPackSettings }) {
         </div>
 
         <div className="flex gap-5 flex-wrap items-start">
+          {/* Szerkesztő canvas – KÜLÖN ref */}
           <div className="shrink-0">
-            <canvas ref={iconCanvasRef} width={64} height={64}
+            <canvas
+              ref={editorCanvasRef}
+              width={64}
+              height={64}
               className="rounded-lg border-2 border-gray-600"
-              style={{ width: 64, height: 64, imageRendering: 'pixelated' }} />
+              style={{ width: 64, height: 64, imageRendering: 'pixelated' }}
+            />
             <p className="text-xs text-gray-600 mt-1 text-center">64×64 px</p>
           </div>
 
@@ -247,7 +270,7 @@ export default function PackSettings({ packSettings, setPackSettings }) {
                   placeholder="MC"
                   maxLength={6}
                 />
-                <label className="relative shrink-0">
+                <label className="relative shrink-0" title="Szöveg színe">
                   <div className="w-9 h-9 rounded-lg border border-gray-700 cursor-pointer"
                        style={{ background: iconTextColor }} />
                   <input type="color" className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
@@ -347,7 +370,7 @@ export default function PackSettings({ packSettings, setPackSettings }) {
               <pre>{JSON.stringify({
                 pack: {
                   pack_format: packFormat,
-                  description: FIXED_DESCRIPTION,
+                  description: packSettings.description || '',
                 }
               }, null, 2)}</pre>
             </div>

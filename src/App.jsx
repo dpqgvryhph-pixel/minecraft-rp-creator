@@ -9,17 +9,17 @@ import Header from './components/Header'
 import { DEFAULT_VERSION } from './utils/packFormats'
 import { GUI_MASKS } from './utils/guiMasks'
 
-// Default per-mask slot
-const DEFAULT_MASK_SLOT = () => ({
+// Alapértelmezett értékek egy mask slothoz
+export const DEFAULT_MASK_SLOT = () => ({
   uploadedImage: null,
   imageTransform: { x: 0, y: 0, width: 256, height: 256, rotation: 0 },
-  opacity: 1,
+  opacity:    1,
   brightness: 1,
-  contrast: 1.05,
+  contrast:   1.05,
   saturation: 1,
 })
 
-// Build initial masks object – one slot per mask id
+// Minden mask-hoz külön slot az indulásnál
 const buildInitialMasks = () => {
   const masks = {}
   Object.keys(GUI_MASKS).forEach(id => { masks[id] = DEFAULT_MASK_SLOT() })

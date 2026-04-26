@@ -4,33 +4,41 @@ import { GUI_MASKS, GUI_CATEGORIES, GUI_META } from '../utils/guiMasks'
 
 export default function CanvasEditor({ editorState, setEditorState, defaultMaskSlot }) {
   const canvasRef = useRef(null)
-  const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0, imgX: 0, imgY: 0 })
+  const [isDragging, setIsDragging] = useState(false)
   const [openCategory, setOpenCategory] = useState('storage')
 
   const maskId = editorState.selectedMask
+  // Mindig az aktuális mask slotját olvassuk
   const slot = editorState.masks?.[maskId] ?? defaultMaskSlot()
 
-  // Update the current mask's slot
-  const updateSlot = (updates) =>
+  // Csak az aktuális mask slotját frissíti
+  const updateSlot = useCallback((updates) =>
     setEditorState(prev => ({
       ...prev,
       masks: {
         ...prev.masks,
-        [prev.selectedMask]: { ...(prev.masks?.[prev.selectedMask] ?? defaultMaskSlot()), ...updates },
+        [prev.selectedMask]: {
+          ...(prev.masks?.[prev.selectedMask] ?? defaultMaskSlot()),
+          ...updates,
+        },
       },
-    }))
+    })),
+  [setEditorState, defaultMaskSlot])
 
-  // Update top-level editorState (selectedMask, showMaskOverlay)
-  const updateTop = (updates) => setEditorState(prev => ({ ...prev, ...updates }))
+  // Top-level mezők (selectedMask, showMaskOverlay)
+  const updateTop = useCallback((updates) =>
+    setEditorState(prev => ({ ...prev, ...updates })),
+  [setEditorState])
 
+  // Canvas rajzolás
   const drawCanvas = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     ctx.clearRect(0, 0, 256, 256)
 
-    // Checkerboard background
+    // Sakktábla háttér
     const size = 16
     for (let y = 0; y < 256; y += size) {
       for (let x = 0; x < 256; x += size) {
@@ -131,27 +139,29 @@ export default function CanvasEditor({ editorState, setEditorState, defaultMaskS
     })
   }
 
-  // Reset only transform (keep image)
+  // Csak Transform visszaállítás (kép és FX megmarad)
   const resetTransform = () =>
     updateSlot({ imageTransform: defaultMaskSlot().imageTransform })
 
-  // Reset only visual FX (keep image + transform)
-  const resetVisualFX = () =>
+  // Csak Visual FX visszaállítás (kép és transform megmarad)
+  const resetVisualFX = () => {
+    const d = defaultMaskSlot()
     updateSlot({
-      opacity:    defaultMaskSlot().opacity,
-      brightness: defaultMaskSlot().brightness,
-      contrast:   defaultMaskSlot().contrast,
-      saturation: defaultMaskSlot().saturation,
+      opacity:    d.opacity,
+      brightness: d.brightness,
+      contrast:   d.contrast,
+      saturation: d.saturation,
     })
+  }
 
-  // Full reset for this mask slot (clear image too)
+  // Teljes mask reset (kép is törlődik)
   const resetMask = () => updateSlot(defaultMaskSlot())
 
   const currentMeta = GUI_META[maskId]
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6">
-      {/* Canvas Area */}
+      {/* Bal – Canvas + mask selector */}
       <div className="space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
@@ -185,7 +195,7 @@ export default function CanvasEditor({ editorState, setEditorState, defaultMaskS
           </div>
         </div>
 
-        {/* Category tabs + mask selector */}
+        {/* Kategória gombok */}
         <div className="space-y-2">
           <div className="flex gap-1 flex-wrap">
             {GUI_CATEGORIES.map(cat => (
@@ -263,36 +273,49 @@ export default function CanvasEditor({ editorState, setEditorState, defaultMaskS
         </div>
 
         <p className="text-xs text-gray-600">
-          Tip: Drag the image on the canvas to reposition it. A zöld pont jelzi, hogy az adott mask-hoz kép van feltöltve.
+          Tip: Húzd a képet a canvason a pozicionáláshoz. A zöld pont jelzi, ha az adott mask-hoz van kép feltöltve.
         </p>
       </div>
 
-      {/* Controls Panel */}
+      {/* Jobb – Kontrollok */}
       <div className="space-y-4">
+
         {/* Transform */}
         <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-purple-300 uppercase tracking-wider">Transform</h3>
             <button
               onClick={resetTransform}
-              title="Visszaállítás alapértékre"
+              title="Visszaállítás alapértékre: X=0, Y=0, W=256, H=256, Rot=0°"
               className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium
                          bg-gray-800 hover:bg-gray-700 text-gray-400 border border-gray-700 transition-all"
             >
               <RefreshCw size={11} /> Reset
             </button>
           </div>
+          {/* Alapértékek: X=0, Y=0, W=256, H=256, Rot=0 */}
           {[
-            ['X Position', 'x',        -256, 256, 1,    'px'],
-            ['Y Position', 'y',        -256, 256, 1,    'px'],
-            ['Width',      'width',      32, 512, 1,    'px'],
-            ['Height',     'height',     32, 512, 1,    'px'],
-            ['Rotation',   'rotation', -180, 180, 1,    '°'],
-          ].map(([label, key, min, max, step, unit]) => (
+            ['X Position', 'x',        -256, 256, 1,  'px',  0],
+            ['Y Position', 'y',        -256, 256, 1,  'px',  0],
+            ['Width',      'width',      32, 512, 1,  'px',  256],
+            ['Height',     'height',     32, 512, 1,  'px',  256],
+            ['Rotation',   'rotation', -180, 180, 1,  '°',   0],
+          ].map(([label, key, min, max, step, unit, def]) => (
             <div key={key}>
-              <label className="text-xs text-gray-400 uppercase tracking-wider mb-1 block">
-                {label}: <span className="text-gray-200">{slot.imageTransform[key]}{unit}</span>
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs text-gray-400 uppercase tracking-wider">
+                  {label}: <span className="text-gray-200">{slot.imageTransform[key]}{unit}</span>
+                </label>
+                {slot.imageTransform[key] !== def && (
+                  <button
+                    onClick={() => updateSlot({ imageTransform: { ...slot.imageTransform, [key]: def } })}
+                    title={`Visszaállítás: ${def}${unit}`}
+                    className="text-[10px] text-gray-600 hover:text-cyan-400 transition-colors px-1"
+                  >
+                    ↺{def}{unit}
+                  </button>
+                )}
+              </div>
               <input
                 type="range" min={min} max={max} step={step}
                 value={slot.imageTransform[key]}
@@ -312,23 +335,35 @@ export default function CanvasEditor({ editorState, setEditorState, defaultMaskS
             <h3 className="text-sm font-bold text-cyan-300 uppercase tracking-wider">Visual FX</h3>
             <button
               onClick={resetVisualFX}
-              title="Visszaállítás alapértékre"
+              title="Visszaállítás: Opacity=1.00, Brightness=1.00, Contrast=1.05, Saturation=1.00"
               className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium
                          bg-gray-800 hover:bg-gray-700 text-gray-400 border border-gray-700 transition-all"
             >
               <RefreshCw size={11} /> Reset
             </button>
           </div>
+          {/* Alapértékek: Opacity=1, Brightness=1, Contrast=1.05, Saturation=1 */}
           {[
-            ['Opacity',    'opacity',    0,   1, 0.01],
-            ['Brightness', 'brightness', 0.1, 3, 0.05],
-            ['Contrast',   'contrast',   0.1, 3, 0.05],
-            ['Saturation', 'saturation', 0,   3, 0.05],
-          ].map(([label, key, min, max, step]) => (
+            ['Opacity',    'opacity',    0,   1,   0.01, 1],
+            ['Brightness', 'brightness', 0.1, 3,   0.05, 1],
+            ['Contrast',   'contrast',   0.1, 3,   0.05, 1.05],
+            ['Saturation', 'saturation', 0,   3,   0.05, 1],
+          ].map(([label, key, min, max, step, def]) => (
             <div key={key}>
-              <label className="text-xs text-gray-400 uppercase tracking-wider mb-1 block">
-                {label}: <span className="text-gray-200">{slot[key].toFixed(2)}</span>
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs text-gray-400 uppercase tracking-wider">
+                  {label}: <span className="text-gray-200">{slot[key].toFixed(2)}</span>
+                </label>
+                {Math.abs(slot[key] - def) > 0.001 && (
+                  <button
+                    onClick={() => updateSlot({ [key]: def })}
+                    title={`Visszaállítás: ${def.toFixed(2)}`}
+                    className="text-[10px] text-gray-600 hover:text-cyan-400 transition-colors px-1"
+                  >
+                    ↺{def.toFixed(2)}
+                  </button>
+                )}
+              </div>
               <input
                 type="range" min={min} max={max} step={step}
                 value={slot[key]}
@@ -339,6 +374,7 @@ export default function CanvasEditor({ editorState, setEditorState, defaultMaskS
             </div>
           ))}
         </div>
+
       </div>
     </div>
   )
