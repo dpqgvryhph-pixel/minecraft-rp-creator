@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Image, Settings, Download } from 'lucide-react'
+import { Image, Settings, Download, Package } from 'lucide-react'
 import CanvasEditor from './components/CanvasEditor'
 import PackSettings from './components/PackSettings'
 import ExportPanel from './components/ExportPanel'
+import ItemEditor from './components/ItemEditor'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
 import { DEFAULT_VERSION } from './utils/packFormats'
@@ -11,11 +12,11 @@ import { GUI_MASKS } from './utils/guiMasks'
 
 export const DEFAULT_MASK_SLOT = () => ({
   uploadedImage:  null,
-  imageTransform: { x: 0, y: 0, width: 256, height: 256, rotation: 0 },
-  opacity:     1,
-  brightness:  1,
-  contrast:    1.05,
-  saturation:  1,
+  imageTransform: null,
+  opacity:        1,
+  brightness:     1,
+  contrast:       1.05,
+  saturation:     1,
 })
 
 const buildInitialMasks = () => {
@@ -42,22 +43,36 @@ function App() {
   })
 
   const tabs = [
-    { id: 'editor',   label: 'GUI Editor',   icon: Image    },
-    { id: 'settings', label: 'Pack Settings', icon: Settings },
-    { id: 'export',   label: 'Export',        icon: Download },
+    { id: 'editor',  label: 'GUI Editor',    icon: Image    },
+    { id: 'items',   label: 'Item Editor',   icon: Package  },
+    { id: 'settings',label: 'Pack Settings', icon: Settings },
+    { id: 'export',  label: 'Export',        icon: Download },
   ]
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
-      <Header />
-      <div className="flex h-[calc(100vh-64px)]">
-        <Sidebar tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab} />
-        <main className="flex-1 overflow-auto p-6">
+    <div className="min-h-screen bg-gray-950 text-white">
+      <Header packSettings={packSettings} />
+      <div className="flex">
+        <nav className="w-16 bg-gray-900 border-r border-gray-800 flex flex-col items-center py-4 gap-2">
+          {tabs.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              title={label}
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                activeTab === id
+                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/50'
+                  : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800'
+              }`}
+            >
+              <Icon size={18} />
+            </button>
+          ))}
+        </nav>
+        <main className="flex-1 overflow-hidden">
           <AnimatePresence mode="wait">
             {activeTab === 'editor' && (
-              <motion.div key="editor"
-                initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}   transition={{ duration: 0.2 }}>
+              <motion.div key="editor" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <CanvasEditor
                   editorState={editorState}
                   setEditorState={setEditorState}
@@ -65,18 +80,25 @@ function App() {
                 />
               </motion.div>
             )}
+            {activeTab === 'items' && (
+              <motion.div key="items" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <ItemEditor />
+              </motion.div>
+            )}
             {activeTab === 'settings' && (
-              <motion.div key="settings"
-                initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}   transition={{ duration: 0.2 }}>
-                <PackSettings packSettings={packSettings} setPackSettings={setPackSettings} />
+              <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <PackSettings
+                  packSettings={packSettings}
+                  setPackSettings={setPackSettings}
+                />
               </motion.div>
             )}
             {activeTab === 'export' && (
-              <motion.div key="export"
-                initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}   transition={{ duration: 0.2 }}>
-                <ExportPanel packSettings={packSettings} editorState={editorState} />
+              <motion.div key="export" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <ExportPanel
+                  editorState={editorState}
+                  packSettings={packSettings}
+                />
               </motion.div>
             )}
           </AnimatePresence>
