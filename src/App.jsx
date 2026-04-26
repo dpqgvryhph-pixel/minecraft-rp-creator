@@ -6,19 +6,17 @@ import PackSettings from './components/PackSettings'
 import ExportPanel from './components/ExportPanel'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
-import { PACK_FORMATS } from './utils/packFormats'
-
-const DEFAULT_VERSION = PACK_FORMATS[PACK_FORMATS.length - 1].label   // always latest
 
 function App() {
   const [activeTab, setActiveTab] = useState('editor')
 
   const [packSettings, setPackSettings] = useState({
     name: 'MyResourcePack',
-    description: 'Created with MC Resource Pack Creator',
-    version: DEFAULT_VERSION,
-    author: '',
-    iconDataUrl: null,   // base64 PNG – custom pack icon drawn by user
+    // Fixed description – not editable by user
+    description: 'made by: aka_Colibry',
+    version: '1.21.5',
+    author: 'aka_Colibry',
+    iconDataUrl: null,
   })
 
   const [editorState, setEditorState] = useState({
