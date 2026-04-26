@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
-import { Info, Upload, RotateCcw, CheckCircle, AlertTriangle, HelpCircle, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react'
+import { Info, Upload, RotateCcw, CheckCircle, AlertTriangle, HelpCircle, ChevronDown, ChevronRight, AlertCircle, Star } from 'lucide-react'
 import { PACK_FORMATS, LEGACY_VERSIONS, VERSION_MAJOR_GROUPS, REPOSITIONED_VERSIONS } from '../utils/packFormats'
 
 const ICON_COLORS = [
@@ -15,8 +15,8 @@ const PACK_FORMATS_MAP = Object.fromEntries(PACK_FORMATS.map(v => [v.label, v]))
 export default function PackSettings({ packSettings, setPackSettings }) {
   const update = (key, value) => setPackSettings(prev => ({ ...prev, [key]: value }))
 
-  // accordion: melyik főverzió van nyitva
-  const [openMajor, setOpenMajor]         = useState('1.21')
+  // accordion: melyik főverzió van nyitva – alapértelmezett: 26.x (legújabb)
+  const [openMajor, setOpenMajor]         = useState('26.x')
   const editorCanvasRef                   = useRef(null)
   const previewCanvasRef                  = useRef(null)
   const [iconBgColor, setIconBgColor]     = useState('#1a1a2e')
@@ -25,7 +25,7 @@ export default function PackSettings({ packSettings, setPackSettings }) {
   const [iconImg, setIconImg]             = useState(null)
 
   const selectedVerObj = PACK_FORMATS_MAP[packSettings.version] ?? null
-  const packFormat     = selectedVerObj?.format ?? 61
+  const packFormat     = selectedVerObj?.format ?? 71
   const support        = selectedVerObj?.support ?? 'guaranteed'
   const isLegacy       = LEGACY_VERSIONS.has(packSettings.version)
   const isRepositioned = REPOSITIONED_VERSIONS.has(packSettings.version)
@@ -81,7 +81,7 @@ export default function PackSettings({ packSettings, setPackSettings }) {
   const SupportBadge = ({ s, repositioned }) => {
     const cfg = {
       guaranteed: { Icon: CheckCircle,   cls: 'text-green-400 bg-green-950/50 border-green-800',    label: 'Garantált' },
-      likely:     { Icon: HelpCircle,    cls: 'text-yellow-400 bg-yellow-950/50 border-yellow-800', label: 'Valószínű' },
+      likely:     { Icon: HelpCircle,    cls: 'text-yellow-400 bg-yellow-950/50 border-yellow-800', label: 'Valószînű' },
       maybe:      { Icon: AlertTriangle, cls: 'text-orange-400 bg-orange-950/50 border-orange-800', label: 'Legacy' },
     }[s] ?? { Icon: HelpCircle, cls: 'text-gray-400 bg-gray-800 border-gray-700', label: String(s) }
     const { Icon, cls, label } = cfg
@@ -259,7 +259,7 @@ export default function PackSettings({ packSettings, setPackSettings }) {
             <AlertCircle size={14} className="text-orange-400 shrink-0 mt-0.5" />
             <p className="text-xs text-orange-300">
               <strong>⚠ Lehetséges újrapozicionálások:</strong> Ebben a verzióban a GUI textúra elrendezése
-              változott. A feltöltött képeket valószínűleg újra kell pozicionálni a kívánt maskon belül.
+              változott. A feltöltött képeket valószìnűleg újra kell pozicionálni a kívánt maskon belül.
             </p>
           </div>
         )}
@@ -269,7 +269,7 @@ export default function PackSettings({ packSettings, setPackSettings }) {
             <AlertTriangle size={14} className="text-red-400 shrink-0 mt-0.5" />
             <p className="text-xs text-red-300">
               <strong>Legacy mód (pre-1.13):</strong> Régi fájlstruktúra –
-              a GUI texturák <code className="bg-gray-800 px-1 rounded">gui/</code> almappában vannak,
+              a GUI texturák <code className="bg-gray-800 px-1 rounded">gui/</code> almáppában vannak,
               és egyes GUI-k még nem is léteztek ebben a verzióban.
             </p>
           </div>
@@ -284,13 +284,14 @@ export default function PackSettings({ packSettings, setPackSettings }) {
               .filter(Boolean)
               .slice().reverse()
             const hasSelected = group.versions.includes(packSettings.version)
+            const isNewSystem = group.major === '26.x'
 
             return (
               <div key={group.major}
                 className={`rounded-xl border transition-all overflow-hidden ${
-                  hasSelected ? 'border-cyan-700/60' : 'border-gray-700'
+                  hasSelected ? 'border-cyan-700/60' : isNewSystem ? 'border-yellow-700/40' : 'border-gray-700'
                 }`}>
-                {/* Accordion fejléc */}
+                {/* Accordion fej léc */}
                 <button
                   onClick={() => setOpenMajor(isOpen ? null : group.major)}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all ${
@@ -298,14 +299,22 @@ export default function PackSettings({ packSettings, setPackSettings }) {
                   }`}>
                   <span className="text-base">{group.icon}</span>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-semibold text-gray-100">{group.label}</span>
+                      {isNewSystem && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-800/60 text-yellow-200 border border-yellow-600/60">
+                          Új verziószám
+                        </span>
+                      )}
                       {hasSelected && (
                         <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-cyan-800 text-cyan-200 border border-cyan-600">
                           AKTÍV
                         </span>
                       )}
                     </div>
+                    {group.description && (
+                      <p className="text-[10px] text-gray-500 mt-0.5">{group.description}</p>
+                    )}
                     {/* Verziók kis pontok */}
                     <div className="flex gap-1 mt-1 flex-wrap">
                       {groupVersionObjs.map(v => (
