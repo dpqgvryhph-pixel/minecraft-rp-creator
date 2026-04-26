@@ -41,8 +41,9 @@ export const PACK_FORMATS = [
   { label: '1.21.4',          format: 46, support: 'guaranteed', repositioned: false, note: '' },
   { label: '1.21.5',          format: 55, support: 'guaranteed', repositioned: false, note: '' },
   { label: '1.21.6',          format: 63, support: 'guaranteed', repositioned: false, note: '' },
-  { label: '1.21.7',          format: 64, support: 'guaranteed', repositioned: false, note: '' },
-  { label: '1.21.8',          format: 64, support: 'guaranteed', repositioned: false, note: 'Azonos format mint 1.21.7' },
+  // 1.21.7 és 1.21.8 szándékosan azonos format=64 – Mojang nem emelte a számot
+  { label: '1.21.7',          format: 64, support: 'guaranteed', repositioned: false, note: 'pack_format 64 – Mojang nem emelte 1.21.8-ban sem' },
+  { label: '1.21.8',          format: 64, support: 'guaranteed', repositioned: false, note: 'Azonos pack_format mint 1.21.7 (64) – ez helyes, nem hiba' },
   // ── ÚJ VERZIÓSZÁM-RENDSZER (2026+) ──────────────────────────────────────
   // Mojang 2026-tól calendar-based verziószámozásra váltott
   // Forrás: minecraft.net/en-us/article/minecraft-new-version-numbering-system
