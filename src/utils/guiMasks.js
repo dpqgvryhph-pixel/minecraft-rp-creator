@@ -59,34 +59,34 @@ export const GUI_TEXTURE_PATHS = {
 // These are used by calcMaskCenteredTransform() to fit-center the uploaded
 // image precisely inside the GUI area.
 export const GUI_META = {
-  inventory:     { category: 'storage',  since: '1.0',   label: 'Inventory',                    guiX: 40, guiY: 45, guiW: 176, guiH: 166 },
-  chest:         { category: 'storage',  since: '1.0',   label: 'Small Chest (27 slots)',        guiX: 40, guiY: 45, guiW: 176, guiH: 166 },
-  chest_large:   { category: 'storage',  since: '1.0',   label: 'Large Chest (54 slots)',        guiX: 40, guiY: 17, guiW: 176, guiH: 222 },
-  ender_chest:   { category: 'storage',  since: '1.3',   label: 'Ender Chest',                   guiX: 40, guiY: 45, guiW: 176, guiH: 166 },
-  shulker_box:   { category: 'storage',  since: '1.11',  label: 'Shulker Box',                   guiX: 40, guiY: 45, guiW: 176, guiH: 166 },
-  barrel:        { category: 'storage',  since: '1.14',  label: 'Barrel (54 slots)',              guiX: 40, guiY: 17, guiW: 176, guiH: 222 },
-  crafting:      { category: 'crafting', since: '1.0',   label: 'Crafting Table',                guiX: 40, guiY: 45, guiW: 176, guiH: 166 },
-  loom:          { category: 'crafting', since: '1.14',  label: 'Loom',                          guiX: 40, guiY: 45, guiW: 176, guiH: 166 },
-  cartography:   { category: 'crafting', since: '1.14',  label: 'Cartography Table',             guiX: 40, guiY: 45, guiW: 176, guiH: 166 },
-  stonecutter:   { category: 'crafting', since: '1.14',  label: 'Stonecutter',                   guiX: 40, guiY: 45, guiW: 176, guiH: 166 },
-  grindstone:    { category: 'crafting', since: '1.14',  label: 'Grindstone',                    guiX: 40, guiY: 45, guiW: 176, guiH: 166 },
-  anvil:         { category: 'crafting', since: '1.4',   label: 'Anvil',                         guiX: 40, guiY: 45, guiW: 176, guiH: 166 },
-  smithing:      { category: 'crafting', since: '1.16',  label: 'Smithing Table',                guiX: 40, guiY: 45, guiW: 176, guiH: 166 },
-  furnace:       { category: 'smelting', since: '1.0',   label: 'Furnace',                       guiX: 40, guiY: 45, guiW: 176, guiH: 166 },
-  blast_furnace: { category: 'smelting', since: '1.14',  label: 'Blast Furnace',                 guiX: 40, guiY: 45, guiW: 176, guiH: 166 },
-  smoker:        { category: 'smelting', since: '1.14',  label: 'Smoker',                        guiX: 40, guiY: 45, guiW: 176, guiH: 166 },
-  enchanting:    { category: 'utility',  since: '1.0',   label: 'Enchanting Table',              guiX: 40, guiY: 45, guiW: 176, guiH: 166 },
-  brewing:       { category: 'utility',  since: '1.0',   label: 'Brewing Stand',                 guiX: 40, guiY: 45, guiW: 176, guiH: 166 },
-  beacon:        { category: 'utility',  since: '1.4',   label: 'Beacon',                        guiX: 13, guiY: 18, guiW: 230, guiH: 219 },
-  dispenser:     { category: 'utility',  since: '1.0',   label: 'Dispenser / Dropper',           guiX: 40, guiY: 45, guiW: 176, guiH: 166 },
-  hopper:        { category: 'utility',  since: '1.5',   label: 'Hopper',                        guiX: 40, guiY: 62, guiW: 176, guiH: 133 },
-  crafter:       { category: 'utility',  since: '1.21',  label: 'Crafter',                       guiX: 40, guiY: 45, guiW: 176, guiH: 166 },
-  horse:         { category: 'mob',      since: '1.6',   label: 'Horse / Donkey',                guiX: 40, guiY: 45, guiW: 176, guiH: 166 },
-  villager:      { category: 'mob',      since: '1.14',  label: 'Villager Trade',                guiX:  0, guiY: 45, guiW: 256, guiH: 166 },
-  title_bg:      { category: 'menu',     since: '1.0',   label: 'Főmenü háttér overlay',         guiX:  0, guiY:  0, guiW: 256, guiH: 256 },
-  widgets:       { category: 'menu',     since: '1.0',   label: 'Widgets (UI sáv)',              guiX:  0, guiY:  0, guiW: 256, guiH: 256 },
-  icons:         { category: 'menu',     since: '1.0',   label: 'Icons (szív, étel, XP)',        guiX:  0, guiY:  0, guiW: 256, guiH: 256 },
-  hotbar:        { category: 'menu',     since: '1.0',   label: 'Hotbar',                        guiX:  0, guiY:  0, guiW: 256, guiH: 256 },
+  inventory:     { category: 'storage',  since: '1.0',   label: 'Inventory',                    guiX: 0, guiY: 0, guiW: 176, guiH: 166 },
+  chest:         { category: 'storage',  since: '1.0',   label: 'Small Chest (27 slots)',        guiX: 0, guiY: 0, guiW: 176, guiH: 166 },
+  chest_large:   { category: 'storage',  since: '1.0',   label: 'Large Chest (54 slots)',        guiX: 0, guiY: 0, guiW: 176, guiH: 222 },
+  ender_chest:   { category: 'storage',  since: '1.3',   label: 'Ender Chest',                   guiX: 0, guiY: 0, guiW: 176, guiH: 166 },
+  shulker_box:   { category: 'storage',  since: '1.11',  label: 'Shulker Box',                   guiX: 0, guiY: 0, guiW: 176, guiH: 166 },
+  barrel:        { category: 'storage',  since: '1.14',  label: 'Barrel (54 slots)',              guiX: 0, guiY: 0, guiW: 176, guiH: 222 },
+  crafting:      { category: 'crafting', since: '1.0',   label: 'Crafting Table',                guiX: 0, guiY: 0, guiW: 176, guiH: 166 },
+  loom:          { category: 'crafting', since: '1.14',  label: 'Loom',                          guiX: 0, guiY: 0, guiW: 176, guiH: 166 },
+  cartography:   { category: 'crafting', since: '1.14',  label: 'Cartography Table',             guiX: 0, guiY: 0, guiW: 176, guiH: 166 },
+  stonecutter:   { category: 'crafting', since: '1.14',  label: 'Stonecutter',                   guiX: 0, guiY: 0, guiW: 176, guiH: 166 },
+  grindstone:    { category: 'crafting', since: '1.14',  label: 'Grindstone',                    guiX: 0, guiY: 0, guiW: 176, guiH: 166 },
+  anvil:         { category: 'crafting', since: '1.4',   label: 'Anvil',                         guiX: 0, guiY: 0, guiW: 176, guiH: 166 },
+  smithing:      { category: 'crafting', since: '1.16',  label: 'Smithing Table',                guiX: 0, guiY: 0, guiW: 176, guiH: 166 },
+  furnace:       { category: 'smelting', since: '1.0',   label: 'Furnace',                       guiX: 0, guiY: 0, guiW: 176, guiH: 166 },
+  blast_furnace: { category: 'smelting', since: '1.14',  label: 'Blast Furnace',                 guiX: 0, guiY: 0, guiW: 176, guiH: 166 },
+  smoker:        { category: 'smelting', since: '1.14',  label: 'Smoker',                        guiX: 0, guiY: 0, guiW: 176, guiH: 166 },
+  enchanting:    { category: 'utility',  since: '1.0',   label: 'Enchanting Table',              guiX: 0, guiY: 0, guiW: 176, guiH: 166 },
+  brewing:       { category: 'utility',  since: '1.0',   label: 'Brewing Stand',                 guiX: 0, guiY: 0, guiW: 176, guiH: 166 },
+  beacon:        { category: 'utility',  since: '1.4',   label: 'Beacon',                        guiX: 0, guiY: 0, guiW: 230, guiH: 219 },
+  dispenser:     { category: 'utility',  since: '1.0',   label: 'Dispenser / Dropper',           guiX: 0, guiY: 0, guiW: 176, guiH: 166 },
+  hopper:        { category: 'utility',  since: '1.5',   label: 'Hopper',                        guiX: 0, guiY: 0, guiW: 176, guiH: 133 },
+  crafter:       { category: 'utility',  since: '1.21',  label: 'Crafter',                       guiX: 0, guiY: 0, guiW: 176, guiH: 166 },
+  horse:         { category: 'mob',      since: '1.6',   label: 'Horse / Donkey',                guiX: 0, guiY: 0, guiW: 176, guiH: 166 },
+  villager:      { category: 'mob',      since: '1.14',  label: 'Villager Trade',                guiX: 0, guiY: 0, guiW: 256, guiH: 166 },
+  title_bg:      { category: 'menu',     since: '1.0',   label: 'Főmenü háttér overlay',         guiX: 0, guiY: 0, guiW: 256, guiH: 256 },
+  widgets:       { category: 'menu',     since: '1.0',   label: 'Widgets (UI sáv)',              guiX: 0, guiY: 0, guiW: 256, guiH: 256 },
+  icons:         { category: 'menu',     since: '1.0',   label: 'Icons (szív, étel, XP)',        guiX: 0, guiY: 0, guiW: 256, guiH: 256 },
+  hotbar:        { category: 'menu',     since: '1.0',   label: 'Hotbar',                        guiX: 0, guiY: 0, guiW: 256, guiH: 256 },
 }
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
@@ -135,8 +135,8 @@ function playerInv(ox, oy) {
 //   offsetX = (256 - 176) / 2 = 40
 // For standard 166-high GUIs:
 //   offsetY = (256 - 166) / 2 = 45
-const X = 40
-const Y = 45
+const X = 0
+const Y = 0
 
 // ─── MASK DEFINITIONS ─────────────────────────────────────────────────────────
 export const GUI_MASKS = {
@@ -172,11 +172,11 @@ export const GUI_MASKS = {
   chest_large: {
     label: GUI_META.chest_large.label,
     elements: [
-      { type: 'rect', x: X, y: 17, w: 176, h: 222, fill: PANEL_FILL, color: PANEL_STROKE, fillAlpha: 0.12 },
-      { type: 'text', text: 'Large Chest', x: X+8, y: 29, color: LABEL_COLOR, font: LABEL_FONT },
-      ...slots(X+8, 35, 9, 6),     // 6 rows × 9 = 54 slots
-      { type: 'rect', x: X+8, y: 146, w: 160, h: 1, fill: 'rgba(150,150,150,0.3)', color: 'rgba(150,150,150,0.3)', fillAlpha: 0.5 },
-      ...playerInv(X, 151),
+      { type: 'rect', x: X, y: Y, w: 176, h: 222, fill: PANEL_FILL, color: PANEL_STROKE, fillAlpha: 0.12 },
+      { type: 'text', text: 'Large Chest', x: X+8, y: Y+12, color: LABEL_COLOR, font: LABEL_FONT },
+      ...slots(X+8, Y+18, 9, 6),     // 6 rows × 9 = 54 slots
+      { type: 'rect', x: X+8, y: Y+129, w: 160, h: 1, fill: 'rgba(150,150,150,0.3)', color: 'rgba(150,150,150,0.3)', fillAlpha: 0.5 },
+      ...playerInv(X, Y+134),
     ]
   },
 
@@ -208,11 +208,11 @@ export const GUI_MASKS = {
   barrel: {
     label: GUI_META.barrel.label,
     elements: [
-      { type: 'rect', x: X, y: 17, w: 176, h: 222, fill: PANEL_FILL, color: PANEL_STROKE, fillAlpha: 0.12 },
-      { type: 'text', text: 'Barrel', x: X+8, y: 29, color: LABEL_COLOR, font: LABEL_FONT },
-      ...slots(X+8, 35, 9, 6),
-      { type: 'rect', x: X+8, y: 146, w: 160, h: 1, fill: 'rgba(150,150,150,0.3)', color: 'rgba(150,150,150,0.3)', fillAlpha: 0.5 },
-      ...playerInv(X, 151),
+      { type: 'rect', x: X, y: Y, w: 176, h: 222, fill: PANEL_FILL, color: PANEL_STROKE, fillAlpha: 0.12 },
+      { type: 'text', text: 'Barrel', x: X+8, y: Y+12, color: LABEL_COLOR, font: LABEL_FONT },
+      ...slots(X+8, Y+18, 9, 6),
+      { type: 'rect', x: X+8, y: Y+129, w: 160, h: 1, fill: 'rgba(150,150,150,0.3)', color: 'rgba(150,150,150,0.3)', fillAlpha: 0.5 },
+      ...playerInv(X, Y+134),
     ]
   },
 
@@ -408,10 +408,10 @@ export const GUI_MASKS = {
   hopper: {
     label: GUI_META.hopper.label,
     elements: [
-      { type: 'rect', x: X, y: 62, w: 176, h: 133, fill: PANEL_FILL, color: PANEL_STROKE, fillAlpha: 0.12 },
-      { type: 'text', text: 'Hopper', x: X+8, y: 74, color: LABEL_COLOR, font: LABEL_FONT },
-      ...slots(X+44, 80, 5, 1),
-      ...playerInv(X, 101),
+      { type: 'rect', x: X, y: Y, w: 176, h: 133, fill: PANEL_FILL, color: PANEL_STROKE, fillAlpha: 0.12 },
+      { type: 'text', text: 'Hopper', x: X+8, y: Y+12, color: LABEL_COLOR, font: LABEL_FONT },
+      ...slots(X+44, Y+18, 5, 1),
+      ...playerInv(X, Y+39),
     ]
   },
 
