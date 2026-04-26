@@ -1,33 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
-import { Info, Upload, RotateCcw, CheckCircle, AlertTriangle, HelpCircle } from 'lucide-react'
-import { PACK_FORMATS, LEGACY_VERSIONS } from '../utils/packFormats'
-
-const VERSION_GROUPS = [
-  {
-    id: 'guaranteed',
-    label: '✅ Garantált',
-    desc: 'Teljesen tesztelt – minden GUI elérési út helyes.',
-    versions: Array.isArray(PACK_FORMATS)
-      ? PACK_FORMATS.filter(v => v.support === 'guaranteed').slice().reverse()
-      : [],
-  },
-  {
-    id: 'likely',
-    label: '🟡 Valószínű',
-    desc: '1.13–1.20 – a GUI texture útvonalak azonosak, kisebb eltérések lehetségesek.',
-    versions: Array.isArray(PACK_FORMATS)
-      ? PACK_FORMATS.filter(v => v.support === 'likely').slice().reverse()
-      : [],
-  },
-  {
-    id: 'maybe',
-    label: '🟠 Legacy (pre-1.13)',
-    desc: '1.8.9–1.12 – régi fájlstruktúra, néhány GUI nem létezett még.',
-    versions: Array.isArray(PACK_FORMATS)
-      ? PACK_FORMATS.filter(v => v.support === 'maybe').slice().reverse()
-      : [],
-  },
-]
+import { Info, Upload, RotateCcw, CheckCircle, AlertTriangle, HelpCircle, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react'
+import { PACK_FORMATS, LEGACY_VERSIONS, VERSION_MAJOR_GROUPS, REPOSITIONED_VERSIONS } from '../utils/packFormats'
 
 const ICON_COLORS = [
   '#1a1a2e','#0a0a16','#111827','#1f2937',
@@ -37,11 +10,13 @@ const ICON_COLORS = [
   '#f97316','#84cc16','#10b981',
 ]
 
+const PACK_FORMATS_MAP = Object.fromEntries(PACK_FORMATS.map(v => [v.label, v]))
+
 export default function PackSettings({ packSettings, setPackSettings }) {
   const update = (key, value) => setPackSettings(prev => ({ ...prev, [key]: value }))
 
-  const [openGroup, setOpenGroup]         = useState('guaranteed')
-  // Két külön canvas ref: egy a szerkesztőhöz, egy az előnézethez
+  // accordion: melyik főverzió van nyitva
+  const [openMajor, setOpenMajor]         = useState('1.21')
   const editorCanvasRef                   = useRef(null)
   const previewCanvasRef                  = useRef(null)
   const [iconBgColor, setIconBgColor]     = useState('#1a1a2e')
@@ -49,22 +24,17 @@ export default function PackSettings({ packSettings, setPackSettings }) {
   const [iconTextColor, setIconTextColor] = useState('#ffffff')
   const [iconImg, setIconImg]             = useState(null)
 
-  const selectedVerObj = Array.isArray(PACK_FORMATS)
-    ? PACK_FORMATS.find(v => v.label === packSettings.version)
-    : null
-  const packFormat = selectedVerObj?.format ?? 55
-  const support    = selectedVerObj?.support ?? 'guaranteed'
-  const isLegacy   = LEGACY_VERSIONS instanceof Set
-    ? LEGACY_VERSIONS.has(packSettings.version)
-    : false
+  const selectedVerObj = PACK_FORMATS_MAP[packSettings.version] ?? null
+  const packFormat     = selectedVerObj?.format ?? 61
+  const support        = selectedVerObj?.support ?? 'guaranteed'
+  const isLegacy       = LEGACY_VERSIONS.has(packSettings.version)
+  const isRepositioned = REPOSITIONED_VERSIONS.has(packSettings.version)
 
-  // Ikont rajzol a megadott canvas-ra, visszaadja a dataUrl-t
   const renderIconToCanvas = useCallback((canvas) => {
     if (!canvas) return null
     const ctx = canvas.getContext('2d')
     ctx.fillStyle = iconBgColor
     ctx.fillRect(0, 0, 64, 64)
-    // Sakktábla minta
     for (let cy = 0; cy < 64; cy += 8) {
       for (let cx = 0; cx < 64; cx += 8) {
         if (((cx + cy) / 8) % 2 === 0) {
@@ -86,7 +56,6 @@ export default function PackSettings({ packSettings, setPackSettings }) {
     return canvas.toDataURL('image/png')
   }, [iconBgColor, iconText, iconTextColor, iconImg])
 
-  // Frissítés: editor canvas + preview canvas + packSettings.iconDataUrl
   useEffect(() => {
     const dataUrl = renderIconToCanvas(editorCanvasRef.current)
     renderIconToCanvas(previewCanvasRef.current)
@@ -105,23 +74,21 @@ export default function PackSettings({ packSettings, setPackSettings }) {
   }
 
   const resetIcon = () => {
-    setIconImg(null)
-    setIconText('')
-    setIconBgColor('#1a1a2e')
-    setIconTextColor('#ffffff')
+    setIconImg(null); setIconText(''); setIconBgColor('#1a1a2e'); setIconTextColor('#ffffff')
     update('iconDataUrl', null)
   }
 
-  const SupportBadge = ({ s }) => {
+  const SupportBadge = ({ s, repositioned }) => {
     const cfg = {
       guaranteed: { Icon: CheckCircle,   cls: 'text-green-400 bg-green-950/50 border-green-800',    label: 'Garantált' },
       likely:     { Icon: HelpCircle,    cls: 'text-yellow-400 bg-yellow-950/50 border-yellow-800', label: 'Valószínű' },
-      maybe:      { Icon: AlertTriangle, cls: 'text-orange-400 bg-orange-950/50 border-orange-800', label: 'Lehet, hogy működik' },
+      maybe:      { Icon: AlertTriangle, cls: 'text-orange-400 bg-orange-950/50 border-orange-800', label: 'Legacy' },
     }[s] ?? { Icon: HelpCircle, cls: 'text-gray-400 bg-gray-800 border-gray-700', label: String(s) }
     const { Icon, cls, label } = cfg
     return (
       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${cls}`}>
-        <Icon size={11} />{label}
+        <Icon size={11}/>{label}
+        {repositioned && <span className="ml-1 w-1.5 h-1.5 rounded-full bg-orange-400 inline-block" title="Újrapozicionálás szükséges lehet" />}
       </span>
     )
   }
@@ -137,7 +104,6 @@ export default function PackSettings({ packSettings, setPackSettings }) {
       <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 space-y-5">
         <h3 className="text-sm font-bold text-purple-300 uppercase tracking-wider">Metadata</h3>
 
-        {/* Pack neve */}
         <div>
           <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1">
             Pack neve (in-game menüben látható) <span className="text-red-400">*</span>
@@ -152,15 +118,12 @@ export default function PackSettings({ packSettings, setPackSettings }) {
           />
           <p className="text-xs text-gray-600 mt-1">{(packSettings.name || '').length}/64 karakter</p>
 
-          {/* In-game előnézet – külön canvas ref */}
           <div className="mt-3 rounded-lg overflow-hidden border border-gray-700 bg-gray-950">
             <p className="px-3 pt-2 pb-1 text-xs text-gray-600 font-mono">Előnézet – Minecraft pack lista</p>
             <div className="flex items-center gap-3 px-3 pb-3">
-              {/* Előnézet canvas – KÜLÖN ref! */}
               <canvas
                 ref={previewCanvasRef}
-                width={64}
-                height={64}
+                width={64} height={64}
                 className="rounded border border-gray-700 shrink-0"
                 style={{ width: 32, height: 32, imageRendering: 'pixelated' }}
               />
@@ -172,19 +135,14 @@ export default function PackSettings({ packSettings, setPackSettings }) {
                 <p className="text-gray-400 text-xs leading-tight mt-0.5 font-mono">
                   {packSettings.description || '(nincs leírás)'}
                 </p>
-                <p className="text-gray-600 text-xs mt-0.5 font-mono">
-                  pack_format: {packFormat}
-                </p>
+                <p className="text-gray-600 text-xs mt-0.5 font-mono">pack_format: {packFormat}</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Leírás – szerkeszthető */}
         <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1">
-            Leírás (in-game menüben látható)
-          </label>
+          <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1">Leírás (in-game menüben látható)</label>
           <input
             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm
                        focus:outline-none focus:border-purple-500 transition-colors"
@@ -193,16 +151,11 @@ export default function PackSettings({ packSettings, setPackSettings }) {
             placeholder="made by: Neved"
             maxLength={128}
           />
-          <p className="text-xs text-gray-600 mt-1">
-            {(packSettings.description || '').length}/128 – bekerül a pack.mcmeta fájlba.
-          </p>
+          <p className="text-xs text-gray-600 mt-1">{(packSettings.description || '').length}/128 – bekerül a pack.mcmeta fájlba.</p>
         </div>
 
-        {/* Szerző */}
         <div>
-          <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1">
-            Szerző (csak helyi megjegyzés)
-          </label>
+          <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1">Szerző (csak helyi megjegyzés)</label>
           <input
             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm
                        focus:outline-none focus:border-purple-500 transition-colors"
@@ -225,20 +178,13 @@ export default function PackSettings({ packSettings, setPackSettings }) {
             <RotateCcw size={11} /> Reset
           </button>
         </div>
-
         <div className="flex gap-5 flex-wrap items-start">
-          {/* Szerkesztő canvas – KÜLÖN ref */}
           <div className="shrink-0">
-            <canvas
-              ref={editorCanvasRef}
-              width={64}
-              height={64}
+            <canvas ref={editorCanvasRef} width={64} height={64}
               className="rounded-lg border-2 border-gray-600"
-              style={{ width: 64, height: 64, imageRendering: 'pixelated' }}
-            />
+              style={{ width: 64, height: 64, imageRendering: 'pixelated' }} />
             <p className="text-xs text-gray-600 mt-1 text-center">64×64 px</p>
           </div>
-
           <div className="flex-1 min-w-[200px] space-y-3">
             <div>
               <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Háttérszín</label>
@@ -258,18 +204,14 @@ export default function PackSettings({ packSettings, setPackSettings }) {
                 </label>
               </div>
             </div>
-
             <div>
               <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Szöveg (max 6 kar.)</label>
               <div className="flex gap-2">
                 <input
                   className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-white text-sm
                              focus:outline-none focus:border-purple-500 transition-colors"
-                  value={iconText}
-                  onChange={e => setIconText(e.target.value.slice(0, 6))}
-                  placeholder="MC"
-                  maxLength={6}
-                />
+                  value={iconText} onChange={e => setIconText(e.target.value.slice(0, 6))}
+                  placeholder="MC" maxLength={6} />
                 <label className="relative shrink-0" title="Szöveg színe">
                   <div className="w-9 h-9 rounded-lg border border-gray-700 cursor-pointer"
                        style={{ background: iconTextColor }} />
@@ -278,7 +220,6 @@ export default function PackSettings({ packSettings, setPackSettings }) {
                 </label>
               </div>
             </div>
-
             <div>
               <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Kép feltöltése</label>
               <label
@@ -297,10 +238,11 @@ export default function PackSettings({ packSettings, setPackSettings }) {
         </div>
       </div>
 
-      {/* ── Verzió választó ── */}
+      {/* ── Verzió választó – ACCORDION ── */}
       <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 space-y-4">
         <h3 className="text-sm font-bold text-yellow-300 uppercase tracking-wider">Minecraft verzió</h3>
 
+        {/* Aktuális verzió badge */}
         <div className="flex items-center gap-3 bg-gray-800 rounded-lg px-4 py-3 border border-gray-700">
           <div className="flex-1">
             <p className="text-white font-semibold text-sm">{packSettings.version}</p>
@@ -308,54 +250,125 @@ export default function PackSettings({ packSettings, setPackSettings }) {
               pack_format: <span className="text-cyan-400 font-mono">{packFormat}</span>
             </p>
           </div>
-          <SupportBadge s={support} />
+          <SupportBadge s={support} repositioned={isRepositioned} />
         </div>
 
-        <div className="flex gap-1.5 flex-wrap">
-          {VERSION_GROUPS.map(g => (
-            <button key={g.id} onClick={() => setOpenGroup(g.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                openGroup === g.id
-                  ? 'bg-gray-700 text-white border-gray-500'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700 border-gray-700'
-              }`}>
-              {g.label}
-            </button>
-          ))}
-        </div>
-
-        <p className="text-xs text-gray-500">
-          {VERSION_GROUPS.find(g => g.id === openGroup)?.desc ?? ''}
-        </p>
-
-        <div className="flex flex-wrap gap-1.5">
-          {(VERSION_GROUPS.find(g => g.id === openGroup)?.versions ?? []).map(v => (
-            <button key={v.label} onClick={() => update('version', v.label)}
-              title={`pack_format: ${v.format}${v.note ? ' · ' + v.note : ''}`}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono border transition-all ${
-                packSettings.version === v.label
-                  ? 'bg-cyan-700 text-cyan-100 border-cyan-500'
-                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border-gray-700'
-              }`}>
-              {v.label}
-              {v.note && (
-                <span className="block text-[10px] leading-none mt-0.5 text-gray-500">
-                  {v.note.slice(0, 28)}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {isLegacy && (
-          <div className="flex items-start gap-3 bg-orange-950/40 border border-orange-700/50 rounded-xl p-3">
-            <AlertTriangle size={14} className="text-orange-400 shrink-0 mt-0.5" />
+        {/* Újrapozicionálás figyelmeztetés – csak ha ilyen verziót választott */}
+        {isRepositioned && (
+          <div className="flex items-start gap-3 bg-orange-950/40 border border-orange-600/60 rounded-xl p-3">
+            <AlertCircle size={14} className="text-orange-400 shrink-0 mt-0.5" />
             <p className="text-xs text-orange-300">
-              <strong>Legacy mód:</strong> 1.13 előtt a GUI texturák <code>gui/</code> almappában
-              vannak. Az export megpróbálja a helyes legacy útvonalat alkalmazni.
+              <strong>⚠ Lehetséges újrapozicionálások:</strong> Ebben a verzióban a GUI textúra elrendezése
+              változott. A feltöltött képeket valószínűleg újra kell pozicionálni a kívánt maskon belül.
             </p>
           </div>
         )}
+
+        {isLegacy && (
+          <div className="flex items-start gap-3 bg-red-950/40 border border-red-700/50 rounded-xl p-3">
+            <AlertTriangle size={14} className="text-red-400 shrink-0 mt-0.5" />
+            <p className="text-xs text-red-300">
+              <strong>Legacy mód (pre-1.13):</strong> Régi fájlstruktúra –
+              a GUI texturák <code className="bg-gray-800 px-1 rounded">gui/</code> almappában vannak,
+              és egyes GUI-k még nem is léteztek ebben a verzióban.
+            </p>
+          </div>
+        )}
+
+        {/* Accordion – főverzió csoportok */}
+        <div className="space-y-1.5">
+          {VERSION_MAJOR_GROUPS.map(group => {
+            const isOpen = openMajor === group.major
+            const groupVersionObjs = group.versions
+              .map(lbl => PACK_FORMATS_MAP[lbl])
+              .filter(Boolean)
+              .slice().reverse()
+            const hasSelected = group.versions.includes(packSettings.version)
+
+            return (
+              <div key={group.major}
+                className={`rounded-xl border transition-all overflow-hidden ${
+                  hasSelected ? 'border-cyan-700/60' : 'border-gray-700'
+                }`}>
+                {/* Accordion fejléc */}
+                <button
+                  onClick={() => setOpenMajor(isOpen ? null : group.major)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all ${
+                    isOpen ? 'bg-gray-800' : 'bg-gray-850 hover:bg-gray-800'
+                  }`}>
+                  <span className="text-base">{group.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-gray-100">{group.label}</span>
+                      {hasSelected && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-cyan-800 text-cyan-200 border border-cyan-600">
+                          AKTÍV
+                        </span>
+                      )}
+                    </div>
+                    {/* Verziók kis pontok */}
+                    <div className="flex gap-1 mt-1 flex-wrap">
+                      {groupVersionObjs.map(v => (
+                        <span key={v.label}
+                          className={`inline-flex items-center gap-0.5 text-[10px] font-mono ${
+                            v.label === packSettings.version ? 'text-cyan-400' : 'text-gray-600'
+                          }`}>
+                          {v.repositioned && (
+                            <span className="w-1 h-1 rounded-full bg-orange-400 inline-block" title="Újrapozicionálás" />
+                          )}
+                          {v.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  {isOpen ? <ChevronDown size={16} className="text-gray-400 shrink-0" /> : <ChevronRight size={16} className="text-gray-400 shrink-0" />}
+                </button>
+
+                {/* Accordion tartalom – alverziók */}
+                {isOpen && (
+                  <div className="bg-gray-850 border-t border-gray-700 px-4 py-3">
+                    <div className="flex flex-wrap gap-1.5">
+                      {groupVersionObjs.map(v => (
+                        <button
+                          key={v.label}
+                          onClick={() => update('version', v.label)}
+                          title={`pack_format: ${v.format}${v.note ? ' · ' + v.note : ''}`}
+                          className={`relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-mono border transition-all ${
+                            packSettings.version === v.label
+                              ? 'bg-cyan-700 text-cyan-100 border-cyan-500 shadow-lg shadow-cyan-900/30'
+                              : v.support === 'maybe'
+                                ? 'bg-red-950/30 text-red-300 hover:bg-red-900/30 border-red-800/60'
+                                : v.repositioned
+                                  ? 'bg-orange-950/30 text-orange-300 hover:bg-orange-900/30 border-orange-800/60'
+                                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border-gray-700'
+                          }`}>
+                          {v.repositioned && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0" title="Lehetséges újrapozicionálás" />
+                          )}
+                          <span>{v.label}</span>
+                          <span className="text-[10px] text-gray-500 font-sans">f{v.format}</span>
+                          {v.note && (
+                            <span className="block text-[9px] leading-none text-gray-500 w-full mt-0.5">
+                              {v.note.slice(0, 32)}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Ha van repositioned verzió ebben a csoportban – magyarázat */}
+                    {groupVersionObjs.some(v => v.repositioned) && (
+                      <p className="text-[10px] text-orange-400/70 mt-2 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-orange-400 inline-block" />
+                        = lehetséges újrapozicionálás szükséges ennél a verziónál
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       {/* pack.mcmeta előnézet */}
@@ -368,10 +381,7 @@ export default function PackSettings({ packSettings, setPackSettings }) {
             </p>
             <div className="bg-gray-950 rounded-lg p-3 font-mono text-xs text-gray-300 overflow-auto">
               <pre>{JSON.stringify({
-                pack: {
-                  pack_format: packFormat,
-                  description: packSettings.description || '',
-                }
+                pack: { pack_format: packFormat, description: packSettings.description || '' }
               }, null, 2)}</pre>
             </div>
           </div>

@@ -1,17 +1,17 @@
 import { useState } from 'react'
 import JSZip from 'jszip'
 import { Download, FolderOpen, CheckCircle, Loader, FileText, AlertCircle, AlertTriangle, HelpCircle, Cloud } from 'lucide-react'
-import { PACK_FORMATS, LEGACY_VERSIONS } from '../utils/packFormats'
+import { PACK_FORMATS, LEGACY_VERSIONS, REPOSITIONED_VERSIONS } from '../utils/packFormats'
 import { GUI_TEXTURE_PATHS, GUI_META } from '../utils/guiMasks'
 import SaveModal from './SaveModal'
 
 const FIXED_DESCRIPTION = 'made by: GUICraft'
 
-// Pre-1.13 flat gui/ struktúra – helyes vanilla fájlnevek
+// Pre-1.13 legacy GUI fájlnevek (vanilla helyes nevek)
 const LEGACY_PATHS = {
   inventory:   'assets/minecraft/textures/gui/inventory.png',
   chest:       'assets/minecraft/textures/gui/container/generic_54.png',
-  chest_small: 'assets/minecraft/textures/gui/container/chest.png',      // FIX: volt container.png
+  chest_small: 'assets/minecraft/textures/gui/container/chest.png',
   crafting:    'assets/minecraft/textures/gui/container/crafting_table.png',
   furnace:     'assets/minecraft/textures/gui/container/furnace.png',
   dispenser:   'assets/minecraft/textures/gui/container/dispenser.png',
@@ -23,20 +23,19 @@ const LEGACY_PATHS = {
   horse:       'assets/minecraft/textures/gui/container/horse.png',
 }
 
+const PACK_FORMATS_MAP = Object.fromEntries(PACK_FORMATS.map(v => [v.label, v]))
+
 export default function ExportPanel({ packSettings, editorState }) {
   const [exporting, setExporting] = useState(false)
   const [done, setDone]           = useState(false)
   const [error, setError]         = useState(null)
   const [saveModalOpen, setSaveModalOpen] = useState(false)
 
-  const selectedVer = Array.isArray(PACK_FORMATS)
-    ? PACK_FORMATS.find(v => v.label === packSettings.version)
-    : null
-  const packFormat = selectedVer?.format ?? 55
-  const support    = selectedVer?.support ?? 'likely'
-  const isLegacy   = LEGACY_VERSIONS instanceof Set
-    ? LEGACY_VERSIONS.has(packSettings.version)
-    : false
+  const selectedVer  = PACK_FORMATS_MAP[packSettings.version] ?? null
+  const packFormat   = selectedVer?.format ?? 61
+  const support      = selectedVer?.support ?? 'guaranteed'
+  const isLegacy     = LEGACY_VERSIONS.has(packSettings.version)
+  const isRepositioned = REPOSITIONED_VERSIONS.has(packSettings.version)
 
   const masksWithImages = Object.entries(editorState.masks ?? {}).filter(([, s]) => !!s.uploadedImage)
 
@@ -48,8 +47,7 @@ export default function ExportPanel({ packSettings, editorState }) {
   const getMaskCanvasBlob = (maskId) => new Promise((resolve, reject) => {
     try {
       const canvas = document.createElement('canvas')
-      canvas.width  = 256
-      canvas.height = 256
+      canvas.width = 256; canvas.height = 256
       const ctx = canvas.getContext('2d')
       ctx.clearRect(0, 0, 256, 256)
       const slot = editorState.masks?.[maskId]
@@ -67,10 +65,7 @@ export default function ExportPanel({ packSettings, editorState }) {
         ctx.drawImage(slot.uploadedImage, -width / 2, -height / 2, width, height)
         ctx.restore()
       }
-      canvas.toBlob(
-        b => b ? resolve(b) : reject(new Error('Canvas toBlob returned null')),
-        'image/png'
-      )
+      canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas toBlob null')), 'image/png')
     } catch (e) { reject(e) }
   })
 
@@ -87,13 +82,12 @@ export default function ExportPanel({ packSettings, editorState }) {
 
   const buildDefaultIcon = () => new Promise(resolve => {
     const canvas = document.createElement('canvas')
-    canvas.width  = 64; canvas.height = 64
+    canvas.width = 64; canvas.height = 64
     const ctx = canvas.getContext('2d')
     ctx.fillStyle = '#1a1a2e'; ctx.fillRect(0, 0, 64, 64)
     ctx.fillStyle = '#7c3aed'; ctx.fillRect(0, 0, 64, 32)
     ctx.fillStyle = '#06b6d4'; ctx.fillRect(0, 32, 64, 32)
-    ctx.fillStyle = '#ffffff'
-    ctx.font = 'bold 12px monospace'
+    ctx.fillStyle = '#ffffff'; ctx.font = 'bold 12px monospace'
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
     ctx.fillText('MC', 32, 48)
     canvas.toBlob(b => resolve(b), 'image/png')
@@ -107,7 +101,7 @@ export default function ExportPanel({ packSettings, editorState }) {
       const safeVer  = (packSettings.version || '').replace(/[\s\u2013\-]+/g, '')
 
       zip.file('pack.mcmeta', JSON.stringify({
-        pack: { pack_format: packFormat, description: FIXED_DESCRIPTION }
+        pack: { pack_format: packFormat, description: packSettings.description || FIXED_DESCRIPTION }
       }, null, 2))
 
       const iconBlob = packSettings.iconDataUrl
@@ -142,8 +136,8 @@ export default function ExportPanel({ packSettings, editorState }) {
     } finally { setExporting(false) }
   }
 
-  const maskMeta    = GUI_META?.[editorState.selectedMask]
-  const maskLabel   = maskMeta?.label ?? editorState.selectedMask ?? '?'
+  const maskMeta  = GUI_META?.[editorState.selectedMask]
+  const maskLabel = maskMeta?.label ?? editorState.selectedMask ?? '?'
 
   const SUPPORT_CFG = {
     guaranteed: { cls: 'text-green-400',  bgCls: 'bg-green-950/40 border-green-800/50',  Icon: CheckCircle,   label: 'Garantált' },
@@ -163,14 +157,14 @@ export default function ExportPanel({ packSettings, editorState }) {
   ]
 
   const fileStructureRows = [
-    { path: 'pack.mcmeta', desc: `pack_format: ${packFormat} · "${FIXED_DESCRIPTION}"` },
+    { path: 'pack.mcmeta', desc: `pack_format: ${packFormat} · "${packSettings.description || FIXED_DESCRIPTION}"` },
     { path: 'pack.png',    desc: packSettings.iconDataUrl ? 'Egyedi icon (64×64)' : 'Alap icon' },
     ...(masksWithImages.length > 0
       ? masksWithImages.map(([id]) => ({
           path: getTexturePath(id, isLegacy),
           desc: `${GUI_META[id]?.label ?? id} – 256×256 PNG`,
         }))
-      : [{ path: getTexturePath(editorState.selectedMask, isLegacy), desc: `${maskLabel} – üres canvas (256×256 PNG)` }]
+      : [{ path: getTexturePath(editorState.selectedMask, isLegacy), desc: `${maskLabel} – üres canvas` }]
     ),
   ]
 
@@ -197,11 +191,21 @@ export default function ExportPanel({ packSettings, editorState }) {
       </div>
 
       <div className="flex items-center gap-3 bg-gray-900 border border-gray-700 rounded-xl px-4 py-3">
-        <span className="text-xs text-gray-500">📝 Leírás (fix):</span>
-        <code className="text-cyan-400 text-xs font-mono">{FIXED_DESCRIPTION}</code>
+        <span className="text-xs text-gray-500">📝 Leírás:</span>
+        <code className="text-cyan-400 text-xs font-mono">{packSettings.description || FIXED_DESCRIPTION}</code>
       </div>
 
-      {support !== 'guaranteed' && (
+      {isRepositioned && (
+        <div className="flex items-start gap-3 bg-orange-950/40 border border-orange-600/60 rounded-xl p-4">
+          <AlertCircle size={16} className="text-orange-400 shrink-0 mt-0.5" />
+          <p className="text-sm text-orange-300">
+            <strong>⚠ Lehetséges újrapozicionálások:</strong> A kiválasztott verzióban ({packSettings.version}) a GUI textúra elrendezése változott.
+            Ellenőrizd a mask-okon belüli képpozíciókat, mielőtt exportálsz!
+          </p>
+        </div>
+      )}
+
+      {support !== 'guaranteed' && !isRepositioned && (
         <div className={`flex items-start gap-3 border rounded-xl p-4 ${supportCfg.bgCls}`}>
           <SupportIcon size={16} className={`${supportCfg.cls} shrink-0 mt-0.5`} />
           <p className={`text-sm ${supportCfg.cls}`}>
@@ -233,7 +237,7 @@ export default function ExportPanel({ packSettings, editorState }) {
         <div className="flex items-start gap-3 bg-yellow-950/40 border border-yellow-700/50 rounded-xl p-4">
           <AlertCircle size={16} className="text-yellow-400 shrink-0 mt-0.5" />
           <p className="text-sm text-yellow-300">
-            Nincs feltöltött kép egyetlen mask-hoz sem. Az exportált texture üres (átlátszó) PNG lesz.
+            Nincs feltöltött kép egyetlen mask-hoz sem. Az exportált texture üres PNG lesz.
             Menj a <strong>GUI Editor</strong> fülre és töltsd fel a képeket.
           </p>
         </div>
@@ -266,8 +270,7 @@ export default function ExportPanel({ packSettings, editorState }) {
         </div>
         <button
           onClick={() => setSaveModalOpen(true)}
-          className="w-full py-4 rounded-xl font-bold text-base flex items-center justify-center gap-3 bg-gray-800 hover:bg-gray-750 border border-dashed border-cyan-700/60 hover:border-cyan-500 text-cyan-300 hover:text-cyan-200 transition-all group mt-1"
-        >
+          className="w-full py-4 rounded-xl font-bold text-base flex items-center justify-center gap-3 bg-gray-800 hover:bg-gray-750 border border-dashed border-cyan-700/60 hover:border-cyan-500 text-cyan-300 hover:text-cyan-200 transition-all group mt-1">
           <Cloud size={20} className="group-hover:scale-110 transition-transform" />
           Mentés a felhőbe
         </button>
